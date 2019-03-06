@@ -1,57 +1,43 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 02/07/2019 04:42:09 PM
--- Design Name: 
--- Module Name: top - structural
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
+-- Course: ECE 441 
+-- Program: CORDIC
+-- File: Top file 
 ----------------------------------------------------------------------------------
-
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.all;
+use work.CORDIC_package.ALL;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
+--BASYS 3 Input/outputs
 entity top is
 port (
     -- button
-    clk         : IN std_logic;
-	btnC    	: IN std_logic;
-	btnU    	: IN std_logic;
-	btnD    	: IN std_logic;
-	btnR    	: IN std_logic;
-	btnL    	: IN std_logic;
+    clk         : IN std_logic; -- 100MHz Clock 
+	btnC    	: IN std_logic; -- User Button
+	btnU    	: IN std_logic; -- Reset Button 
+	btnD    	: IN std_logic; --NOT USED 
+	btnR    	: IN std_logic; --Next state 
+	btnL    	: IN std_logic; --NOT USED 
+ 
     --switches
-	sw          : IN std_logic_vector(15 downto 0);
+	sw          : IN std_logic_vector(15 downto 0); --Slide switch vector
+	
 	--LEDs
-	led         : OUT std_logic_vector(15 downto 0);
+	led         : OUT std_logic_vector(15 downto 0); --LED output vector
+	
 	--7-segment display 
-	seg         : OUT std_logic_vector(6 downto 0);
-	an         : OUT std_logic_vector(3 downto 0));
-
+	seg         : OUT std_logic_vector(6 downto 0); --Cathodes
+	an         : OUT std_logic_vector(3 downto 0)); --Anodes 
 end top;
 
 architecture structural of top is
 
+--Components for CORDIC
+
+
+
+--Driver for 7 segment display
 component hex_driver is 
 port(
     clk	    : IN STD_LOGIC;
@@ -62,6 +48,7 @@ port(
 	cathodes: out STD_LOGIC_VECTOR ( 6 downto 0 ));
 end component;
 
+--General purpose button debouncer
 component debouncer is
     Port ( 
            clk_100MHz    : in  STD_LOGIC;
@@ -71,14 +58,16 @@ component debouncer is
         );  
 end component;
 
+--Finite state machine
 component FSM is
  Port ( 
- clk:       IN std_logic;
- x:         IN std_logic;
- reset:     IN std_logic;
- y:         OUT std_logic_vector(15 downto 0));
+     clk:       IN std_logic;
+     x:         IN std_logic;
+     reset:     IN std_logic;
+     y:         OUT std_logic_vector(3 downto 0));
 end component;
 
+--Edge detector: Single pulse on falling edge of the signal
 component EdgeDetector is
    port (
       clk      :in std_logic;
@@ -86,31 +75,165 @@ component EdgeDetector is
       edge     :out std_logic
    );
 end component EdgeDetector;
-
-
 --signals here
+
+component reg_16b is
+    PORT (
+        d       :IN STD_LOGIC_VECTOR(15 downto 0);
+        load    :IN STD_LOGIC;
+        clr     :IN STD_LOGIC;
+        clk     :IN STD_LOGIC;
+        q       :OUT STD_LOGIC_VECTOR(15 downto 0)
+        );
+end component reg_16b;
+
+component RAM16 is
+    PORT(
+        clk         :IN STD_LOGIC;
+        clear       :IN STD_LOGIC;
+        write_en    :IN STD_LOGIC;
+        d           :IN STD_LOGIC_VECTOR(15 downto 0);
+        address     :IN UNSIGNED;
+        q           :OUT STD_LOGIC_VECTOR(15 downto 0));
+end component RAM16;
+
+
+component ROM is
+   PORT (
+     address :      IN STD_LOGIC_VECTOR (4 downto 0);
+     q :            OUT STD_LOGIC_VECTOR (15 downto 0));
+ end component ROM;
+    
+
+
+--Data to be displayed on 7-segment display
 signal disp_data: STD_LOGIC_VECTOR (15 downto 0); --Data to be displayed on 7-seg display
-signal btn_deb: STD_LOGIC;
-signal reset: STD_LOGIC;
-signal btn_r: STD_LOGIC;
 
---reset <= '1';
+--User button debounced
+signal user_btn_deb_c: STD_LOGIC;
 
-begin
+--User button debounced
+signal user_btn_deb_r: STD_LOGIC;
 
-  DB1:      debouncer port map (clk_100Mhz => clk, reset => '0', PB_in => btnC, PB_out => btn_deb);
-  HEX1:     hex_driver port map (clk => clk, reset => '0', done => '1', d_in => disp_data, anodes => an, cathodes => seg);   
-  FSM1:     FSM port map(clk => clk, x => btn_r, reset => '0', y => disp_data);
-  ED1:      EdgeDetector port map(clk => clk, d => btn_deb, edge => btn_r);
+--Reset button debounced
+signal reset_btn_deb: STD_LOGIC;
+
+--Button falling edge 
+signal btn_edge_c: STD_LOGIC;
+signal btn_edge_r: STD_LOGIC;
+
+--Done signal from final state of state machine
+signal done: STD_LOGIC;
+
+--Current state
+signal fsm_state: STD_LOGIC_VECTOR(3 downto 0);
+
+--x,y,z data and register 
+signal write_data: STD_LOGIC_VECTOR (15 downto 0);
+signal read_data: STD_LOGIC_VECTOR (15 downto 0);
+signal xdata: STD_LOGIC_VECTOR (15 downto 0);
+signal ydata: STD_LOGIC_VECTOR (15 downto 0);
+signal zdata: STD_LOGIC_VECTOR (15 downto 0);
+
+signal LUT_address: STD_LOGIC_VECTOR (4 downto 0);
+signal LUT_data: STD_LOGIC_VECTOR (15 downto 0);
+
+signal address: UNSIGNED(3 downto 0);
+signal WE: STD_LOGIC;
+
+begin  
+  --Debouncer for user button
+  User_DB_C:      debouncer port map (clk_100Mhz => clk, reset => reset_btn_deb, PB_in => btnC, PB_out => user_btn_deb_c);
+  User_DB_R:      debouncer port map (clk_100Mhz => clk, reset => reset_btn_deb, PB_in => btnR, PB_out => user_btn_deb_r);
   
---P1: process (btn_deb)
---    begin 
---        IF (btn_deb'event and btn_deb = '1') then
---            btn_r <= '1';
---        ELSE
---            btn_r <= '0';
---        END IF;
---    -- end if;
---end process P1;
+  --Debouncer for reset button
+  Reset_DB:     debouncer port map (clk_100Mhz => clk, reset => reset_btn_deb, PB_in => btnU, PB_out => reset_btn_deb);
+  
+  --Hex driver to display "disp_data"
+  HEX:     hex_driver port map (clk => clk, reset => reset_btn_deb, done => done, d_in => disp_data, anodes => an, cathodes => seg);   
+  
+  -- Edge detechtor for user button
+  ED_C:      EdgeDetector port map(clk => clk, d => user_btn_deb_c, edge => btn_edge_c);
+  ED_R:      EdgeDetector port map(clk => clk, d => user_btn_deb_r, edge => btn_edge_r);
+  
+  -- Finite state machine for CORDIC algorithm
+  CORDIC_FSM:     FSM port map(clk => clk, x => btn_edge_r, reset => reset_btn_deb, y => fsm_state);
+  
+  --RAM
+  RAM:          RAM16 port map(clk => clk, clear => '0', write_en => WE, d => write_data, address => address, q => read_data);
+
+  --LUT
+  LUT:          ROM port map(address => LUT_address, q => LUT_data);
+    
+    CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c) IS
+    BEGIN
+    done <= '1';
+    
+    CASE fsm_state IS 
+    WHEN x"0" => --User input x variable
+        led <= x"0001";
+        disp_data <= sw;
+        if btn_edge_c = '1' then
+            write_data <= sw;
+            address <= x_address;
+            WE <= '1';
+        ELSE
+            WE <= '0';
+        END IF;
+        
+    WHEN x"1" => --User input y variable
+        led <= x"0002";
+        disp_data <= sw;
+        if btn_edge_c = '1' then
+            write_data <= sw;
+            address <= y_address;
+            WE <= '1';
+        ELSE
+            WE <= '0';
+        END IF;        
+        
+    WHEN x"2" => --User input z variable 
+        led <= x"0003";
+        disp_data <= sw;
+        if btn_edge_c = '1' then
+            write_data <= sw;
+            address <=z_address;
+            WE <= '1';
+        ELSE
+            WE <= '0';
+        END IF;        
+        
+    WHEN x"3" =>
+        led <= x"0004";
+        address <= y_address;
+        disp_data <= read_data;
+ 
+    WHEN x"4" =>
+        led <= x"0005";
+        address <= y_address;
+        disp_data <= read_data;
+        
+    WHEN x"5" =>
+        led <= x"0006";
+        address <= y_address;
+        disp_data <= read_data;
+                
+    WHEN x"6" =>
+        led <= x"0007";
+        address <= y_address;
+        disp_data <= read_data;                
+
+    WHEN x"7" =>
+        led <= x"0008";
+        address <= y_address;
+        disp_data <= read_data;
+                       
+    WHEN OTHERS =>
+        led <= x"ffff";
+        disp_data <= sw;
+    END CASE;
+    
+END PROCESS CORDIC;          
+        
     
 end structural;
