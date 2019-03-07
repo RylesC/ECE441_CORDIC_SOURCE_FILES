@@ -5,7 +5,7 @@
  
  ENTITY ROM IS
  PORT (
-     address :      IN STD_LOGIC_VECTOR (4 downto 0);
+     address :      IN STD_LOGIC_VECTOR (3 downto 0);
      q :            OUT STD_LOGIC_VECTOR (15 downto 0));
  end ROM;
  

@@ -38,13 +38,13 @@ PORT (
     clear       :IN STD_LOGIC;
     write_en    :IN STD_LOGIC;
     d           :IN STD_LOGIC_VECTOR(15 downto 0);
-    address     :IN UNSIGNED(3 downto 0);
+    address     :IN STD_LOGIC_VECTOR(3 downto 0);
     q           :OUT STD_LOGIC_VECTOR(15 downto 0));
 end RAM16;
 
 architecture Behavioral of RAM16 is
     
-type memory is array (0 to 3) of STD_LOGIC_VECTOR(15 downto 0);
+type memory is array (0 to 15) of STD_LOGIC_VECTOR(15 downto 0);
 
 signal ram: memory;
 
@@ -53,10 +53,10 @@ begin
     RW: process(clk)
     begin   
         if rising_edge(clk) then 
-            q <= ram(to_integer(address));
+            q <= ram(to_integer(UNSIGNED(address)));
     
             if write_en = '1' then
-                ram(to_integer(address)) <= d;
+                ram(to_integer(UNSIGNED(address))) <= d;
             end if;
          end if;
     end process RW;

@@ -9,8 +9,8 @@ package CORDIC_package is
         (ST0,ST1,ST2,ST3,ST4,ST5,ST6,ST7);
             
             
-constant x_address : unsigned := x"1";  
-constant y_address : unsigned := x"2";  
-constant z_address : unsigned := x"3";  
+constant x_address : STD_LOGIC_VECTOR(3 downto 0) := x"0";
+constant y_address : STD_LOGIC_VECTOR(3 downto 0) := x"1";  
+constant z_address : STD_LOGIC_VECTOR(3 downto 0) := x"2";  
 
 end package CORDIC_package;
