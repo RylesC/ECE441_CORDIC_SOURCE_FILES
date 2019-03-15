@@ -16,6 +16,8 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+library xil_deafultlib;
+use xil_deafultlib.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -38,15 +40,15 @@ end cordicadder16;
 
 ARCHITECTURE gen OF cordicadder16 IS
     COMPONENT adder 
-    PORT(
-        a : in STD_LOGIC;
-        b : in STD_LOGIC;
-        cin : in STD_LOGIC;
-        clk: in STD_LOGIC;
-        d : out STD_LOGIC;
-        cout : out STD_LOGIC
-        );
-        END COMPONENT;
+        PORT(
+            a : in STD_LOGIC;
+            b : in STD_LOGIC;
+            cin : in STD_LOGIC;
+            clk: in STD_LOGIC;
+            d : out STD_LOGIC;
+            cout : out STD_LOGIC
+            );
+     END COMPONENT;
 
 SIGNAL carry_sig: std_logic_vector(15 DOWNTO 0);
 
@@ -59,9 +61,9 @@ Adders:
         Add1:
             adder port map (
                 a => a(i), 
-                b => b(i+1),
+                b => b(i),
                 cin => '0',
-                clk => clk,
+                clk => '1',
                 d => sum(i),
                 cout => carry_sig(i)            
             );
@@ -71,9 +73,9 @@ Adders:
             Add1:
             adder port map (
                 a => a(i), 
-                b => b(i+1),
+                b => b(i),
                 cin => carry_sig(i-1),
-                clk => clk,
+                clk => '1',
                 d => sum(i),
                 cout => carry_sig(i)  
             );          
@@ -84,9 +86,9 @@ Adders:
             Add1:
             adder port map (
                 a => a(i), 
-                b => '0',
+                b => b(i),
                 cin => carry_sig(i-1),
-                clk => clk,
+                clk => '1',
                 d => sum(i),
                 cout => carry_sig(i)  
             );          
