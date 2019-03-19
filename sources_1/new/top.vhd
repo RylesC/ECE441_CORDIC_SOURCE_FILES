@@ -88,10 +88,15 @@ component RAM16 is
     PORT(
     clk         :IN STD_LOGIC;
     clear       :IN STD_LOGIC;
-    write_en    :IN STD_LOGIC;
-    d           :IN STD_LOGIC_VECTOR(15 downto 0);
-    address     :IN STD_LOGIC_VECTOR(3 downto 0);
-    q           :OUT STD_LOGIC_VECTOR(15 downto 0));
+    write_en_x    :IN STD_LOGIC;
+    write_en_y    :IN STD_LOGIC;
+    write_en_z    :IN STD_LOGIC;
+    d_x           :IN STD_LOGIC_VECTOR(15 downto 0);
+    d_y           :IN STD_LOGIC_VECTOR(15 downto 0);
+    d_z           :IN STD_LOGIC_VECTOR(15 downto 0);        
+    q_x           :OUT STD_LOGIC_VECTOR(15 downto 0);
+    q_y           :OUT STD_LOGIC_VECTOR(15 downto 0);
+    q_z           :OUT STD_LOGIC_VECTOR(15 downto 0));
 end component RAM16;
 
 component COUNTER_4BIT is
@@ -110,6 +115,23 @@ component ROM is
      q :            OUT STD_LOGIC_VECTOR (15 downto 0));
  end component ROM;
     
+
+component alu is 
+  Port (
+        x_in : in STD_LOGIC_VECTOR(15 DOWNTO 0); 
+        y_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
+        z_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
+        theta : in STD_LOGIC_VECTOR(15 DOWNTO 0);
+        i : in STD_LOGIC_VECTOR(4 DOWNTO 0);
+        add_sub_x : in STD_LOGIC;
+        add_sub_y : in STD_LOGIC;
+        add_sub_z : in STD_LOGIC;
+        x_out : out STD_LOGIC_VECTOR(15 DOWNTO 0); 
+        y_out : out STD_LOGIC_VECTOR(15 DOWNTO 0);
+        z_out : out STD_LOGIC_VECTOR(15 DOWNTO 0);
+        clk   : in STD_LOGIC
+        );
+  end component alu;
 
 --Data to be displayed on 7-segment display
 signal disp_data: STD_LOGIC_VECTOR (15 downto 0):= x"0000"; --Data to be displayed on 7-seg display
@@ -134,8 +156,12 @@ signal done: STD_LOGIC := '0';
 signal fsm_state: STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
 
 --x,y,z data and register 
-signal write_data: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
-signal read_data: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+signal write_data_x: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+signal write_data_y: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+signal write_data_z: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+signal read_data_x: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+signal read_data_y: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+signal read_data_z: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 signal xdata: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 signal ydata: STD_LOGIC_VECTOR (15 downto 0) :=  (others => '0');
 signal zdata: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
@@ -143,12 +169,29 @@ signal zdata: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 signal LUT_address: STD_LOGIC_VECTOR (3 downto 0);
 signal LUT_data: STD_LOGIC_VECTOR (15 downto 0);
 
-signal RAM_address: STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
-signal WE: STD_LOGIC;
+signal WE_x: STD_LOGIC;
+signal WE_y: STD_LOGIC;
+signal WE_z: STD_LOGIC;
+
 
 signal cout: STD_LOGIC_VECTOR(15 downto 0) := (others => '0');
 signal inc_counter: STD_LOGIC := '0';
 signal clear_counter: STD_LOGIC := '0';
+
+--alu
+ signal x_in : STD_LOGIC_VECTOR(15 DOWNTO 0); 
+ signal y_in : STD_LOGIC_VECTOR(15 DOWNTO 0);
+ signal z_in :  STD_LOGIC_VECTOR(15 DOWNTO 0);
+ signal theta :  STD_LOGIC_VECTOR(15 DOWNTO 0);
+ signal i :      STD_LOGIC_VECTOR(4 DOWNTO 0);
+ signal add_sub_x :  STD_LOGIC;
+ signal add_sub_y :  STD_LOGIC;
+ signal add_sub_z :  STD_LOGIC;
+ signal x_out :  STD_LOGIC_VECTOR(15 DOWNTO 0); 
+ signal y_out :  STD_LOGIC_VECTOR(15 DOWNTO 0);
+ signal z_out :  STD_LOGIC_VECTOR(15 DOWNTO 0);
+
+
 
 begin  
   --Debouncer for user button
@@ -169,13 +212,20 @@ begin
   CORDIC_FSM:     FSM port map(clk => clk, x => btn_edge_r, reset => reset_btn_deb, y => fsm_state);
   
   --RAM
-    RAM:          RAM16 port map(clk => clk, clear => reset_btn_deb , write_en => WE, d => write_data, address => RAM_address, q => read_data);
+  
+    RAM:          RAM16 port map(
+                  clk => clk, clear => btnU, 
+                  write_en_x => WE_x, write_en_y => WE_y, write_en_z => WE_z,
+                  d_x => write_data_x, d_y => write_data_y, d_z => write_data_z,  
+                  q_x => read_data_x, q_y => read_data_y, q_z => read_data_z);
 
   --LUT
      LUT:          ROM port map(address => LUT_address, q => LUT_data);
     
     --counter
-    C1:         COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => inc_counter, count_out => cout);
+    C1:         COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_c, count_out => cout);
+    
+    ALU1:        alu port map(clk => clk, x_in => x_in, y_in =>y_in, z_in => z_in, theta => theta, i => i, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z,x_out=> x_out, y_out => y_out, z_out => z_out); 
     
     CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, fsm_state) IS
     BEGIN
@@ -186,62 +236,114 @@ begin
         led <= x"0000";
         disp_data <= sw;
         if btn_edge_c = '1' then
-            write_data <= sw;
-            RAM_address <= x_address;
-            WE <= '1';
+            write_data_x <= sw;
+            WE_x <= '1';
         ELSE
-            WE <= '0';
+            WE_x <= '0';
         END IF;
         
     WHEN x"1" => --User input y variable
         led <= x"0001";
         disp_data <= sw;
         if btn_edge_c = '1' then
-            write_data <= sw;
-            RAM_address <= y_address;
-            WE <= '1';
+            write_data_y <= sw;
+            WE_y <= '1';
         ELSE
-            WE <= '0';
+            WE_y <= '0';
         END IF;        
         
     WHEN x"2" => --User input z variable 
         led <= x"0002";
         disp_data <= sw;
         if btn_edge_c = '1' then
-            write_data <= sw;
-            RAM_address <=z_address;
-            WE <= '1';
+            write_data_z <= sw;
+            WE_z <= '1';
         ELSE
-            WE <= '0';
+            WE_z <= '0';
         END IF;        
         
     WHEN x"3" => --loop through input data
-        led <= x"0003"; 
-        disp_data <= read_data;
-        RAM_address <= cout(3 downto 0);
-        inc_counter <= btn_edge_c;
+        led <= x"0003";
         
+        CASE cout IS
+        WHEN  x"0000" =>
+        disp_data <= read_data_x;
+        WHEN  x"0001" =>
+        disp_data <= read_data_y;
+        WHEN  x"0002" =>
+        disp_data <= read_data_z; 
+        WHEN OTHERS =>
         IF cout >= x"0003" THEN
             clear_counter <= '1';
-        else 
+        else
             clear_counter <= '0';
         END IF;
+        disp_data <= read_data_x;
+        END CASE;
         
     WHEN x"4" => --Run CORDIC algorithm 
         led <= x"0004"; 
-        disp_data <= LUT_data;
-        LUT_address <= cout(3 downto 0);
-        inc_counter <= btn_edge_c;
         
-        IF cout >= x"0016" THEN
-            clear_counter <= '1';
-        else 
-            clear_counter <= '0';
-         END IF;
+        x_in <= read_data_x; 
+        y_in <= read_data_y; 
+        z_in <= read_data_z;         
+        
+        FOR index in 0 to 15 LOOP
+                
+                IF index > 0 THEN
+                x_in <= x_out;
+                y_in <= y_out;
+                z_in <= z_out;
+                ELSE
+                NULL;
+                END IF;
+                
+                i <= STD_LOGIC_VECTOR(TO_UNSIGNED(index, 5));
+                LUT_address <= i(3 downto 0);
+                theta <= LUT_data;
+                
+                --mu 
+                IF z_in < x"0000" THEN
+                    add_sub_x <= '1';
+                    add_sub_y <= '1';
+                    add_sub_z <= '1';
+                ELSE
+                    add_sub_x <= '0';
+                    add_sub_y <= '0';
+                    add_sub_z <= '0';
+                END IF;
+ 
+            IF z_out = x"0000" then
+            write_data_x <= x_out;
+            write_data_y <= y_out;
+            write_data_z <= z_out;
+            WE_x <= '1';
+            WE_y <= '1';
+            WE_z <= '1';
+            led <= x"7777";
+            exit;
+            END IF;        
+        END LOOP;
         
     WHEN x"5" => --Run CORDIC algorithm 
        led <= x"0005"; 
 
+        CASE cout IS
+        WHEN  x"0000" =>
+        disp_data <= read_data_x;
+        WHEN  x"0001" =>
+        disp_data <= read_data_y;
+        WHEN  x"0002" =>
+        disp_data <= read_data_z; 
+        WHEN OTHERS =>
+        IF cout >= x"0003" THEN
+            clear_counter <= '1';
+        else
+            clear_counter <= '0';
+        END IF;
+        disp_data <= read_data_x;
+        END CASE;
+        
     WHEN x"6" => --Run CORDIC algorithm 
        led <= x"0006"; 
 
