@@ -29,19 +29,19 @@ clk:        IN STD_LOGIC;
 reset:      IN STD_LOGIC;
 clear:      IN STD_LOGIC;
 inc:        IN STD_LOGIC;
-count_out:  OUT STD_LOGIC_VECTOR(15 downto 0)
+count_out:  OUT STD_LOGIC_VECTOR(3 downto 0)
 );
 end COUNTER_4BIT;
 
 architecture Behavioral of COUNTER_4BIT is
 
-signal c: STD_LOGIC_VECTOR(15 downto 0) := (others => '0');
+signal c: STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
 
 begin
 
 PROCESS(clk, reset, clear)
     BEGIN
-        IF (reset = '1' or clear = '1') then 
+        IF ((reset = '1') or (clear = '1')) then 
             c <= (OTHERS => '0');
         ELSIF(rising_edge(clk)) then
             IF inc = '1' then

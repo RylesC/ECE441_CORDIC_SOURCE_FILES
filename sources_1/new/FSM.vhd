@@ -80,21 +80,61 @@ begin
             IF x = '1' THEN next_state <= ST5;
             ELSE next_state <= ST4;
             END IF;
-         WHEN ST5 =>
+        WHEN ST5 =>
             y <= x"5";
             IF x = '1' THEN next_state <= ST6;
-            ELSE next_state <= ST5;           
-            END IF; 
-        WHEN ST6 =>
+            ELSE next_state <= ST5;
+            END IF;            
+         WHEN ST6 =>
             y <= x"6";
             IF x = '1' THEN next_state <= ST7;
-            ELSE next_state <= ST6;
+            ELSE next_state <= ST6;           
             END IF;
-        WHEN ST7 =>
+         WHEN ST7 =>
             y <= x"7";
+            IF x = '1' THEN next_state <= ST8;
+            ELSE next_state <= ST7;           
+            END IF;   
+         WHEN ST8 =>
+            y <= x"8";
+            IF x = '1' THEN next_state <= ST9;
+            ELSE next_state <= ST8;           
+            END IF;   
+         WHEN ST9 =>
+            y <= x"9";
+            IF x = '1' THEN next_state <= ST10;
+            ELSE next_state <= ST9;           
+            END IF;   
+         WHEN ST10 =>
+            y <= x"A";
+            IF x = '1' THEN next_state <= ST11;
+            ELSE next_state <= ST10;           
+            END IF;   
+         WHEN ST11 =>
+            y <= x"B";
+            IF x = '1' THEN next_state <= ST12;
+            ELSE next_state <= ST11;           
+            END IF;   
+         WHEN ST12 =>
+            y <= x"C";
+            IF x = '1' THEN next_state <= ST13;
+            ELSE next_state <= ST12;           
+            END IF;   
+         WHEN ST13 =>
+            y <= x"D";
+            IF x = '1' THEN next_state <= ST14;
+            ELSE next_state <= ST13;           
+            END IF;  
+         WHEN ST14 =>
+            y <= x"E";
+            IF x = '1' THEN next_state <= ST15;
+            ELSE next_state <= ST14;           
+            END IF;
+         WHEN ST15 =>
+            y <= x"F";
             IF x = '1' THEN next_state <= ST0;
-            ELSE next_state <= ST7; 
-            END IF;                                  
+            ELSE next_state <= ST15;         
+            END IF;                                                                                                                                            
         WHEN OTHERS =>
             next_state <= ST0;
         END CASE;

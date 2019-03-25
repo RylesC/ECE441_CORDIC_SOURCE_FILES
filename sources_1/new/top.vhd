@@ -8,7 +8,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.all;
 use work.CORDIC_package.ALL;
-
+library xil_deafultlib;
+use xil_deafultlib.all;
 --BASYS 3 Input/outputs
 entity top is
 port (
@@ -87,6 +88,7 @@ end component reg_16b;
 component RAM16 is
     PORT(
     clk         :IN STD_LOGIC;
+    CE          : IN STD_LOGIC;
     clear       :IN STD_LOGIC;
     write_en_x    :IN STD_LOGIC;
     write_en_y    :IN STD_LOGIC;
@@ -105,7 +107,7 @@ component COUNTER_4BIT is
         reset:      IN STD_LOGIC;
         clear:      IN STD_LOGIC;
         inc:        IN STD_LOGIC;
-        count_out:  OUT STD_LOGIC_VECTOR(15 downto 0)
+        count_out:  OUT STD_LOGIC_VECTOR(3 downto 0)
         );
 end component COUNTER_4BIT;
 
@@ -115,14 +117,13 @@ component ROM is
      q :            OUT STD_LOGIC_VECTOR (15 downto 0));
  end component ROM;
     
-
 component alu is 
   Port (
         x_in : in STD_LOGIC_VECTOR(15 DOWNTO 0); 
         y_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
         z_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
         theta : in STD_LOGIC_VECTOR(15 DOWNTO 0);
-        i : in STD_LOGIC_VECTOR(4 DOWNTO 0);
+        i : in STD_LOGIC_VECTOR(3 DOWNTO 0);
         add_sub_x : in STD_LOGIC;
         add_sub_y : in STD_LOGIC;
         add_sub_z : in STD_LOGIC;
@@ -133,11 +134,24 @@ component alu is
         );
   end component alu;
 
+component LATCH_16B is
+    Port (
+        input_data0  : in STD_LOGIC_VECTOR(15 downto 0);
+        input_data1  : in STD_LOGIC_VECTOR(15 downto 0);
+        enable      : in STD_LOGIC;
+        input_sel   : in STD_LOGIC;
+        output_data : out STD_LOGIC_VECTOR(15 downto 0)
+         );
+end component;
+
 --Data to be displayed on 7-segment display
 signal disp_data: STD_LOGIC_VECTOR (15 downto 0):= x"0000"; --Data to be displayed on 7-seg display
 
 --User button debounced
 signal user_btn_deb_c: STD_LOGIC  := '0';
+
+--User button debounced
+signal user_btn_deb_l: STD_LOGIC  := '0';
 
 --User button debounced
 signal user_btn_deb_r: STD_LOGIC  := '0';
@@ -148,6 +162,7 @@ signal reset_btn_deb: STD_LOGIC  := '0';
 --Button falling edge 
 signal btn_edge_c: STD_LOGIC  := '0';
 signal btn_edge_r: STD_LOGIC  := '0';
+signal btn_edge_l: STD_LOGIC  := '0';
 
 --Done signal from final state of state machine
 signal done: STD_LOGIC := '0';
@@ -173,16 +188,18 @@ signal WE_x: STD_LOGIC;
 signal WE_y: STD_LOGIC;
 signal WE_z: STD_LOGIC;
 
+signal CE: STD_LOGIC;
 
-signal cout: STD_LOGIC_VECTOR(15 downto 0) := (others => '0');
+----------------Counter-----------------------
+signal cout: STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
 signal inc_counter: STD_LOGIC := '0';
 signal clear_counter: STD_LOGIC := '0';
+signal iteration    : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
 
 --alu
  signal x_in : STD_LOGIC_VECTOR(15 DOWNTO 0); 
  signal y_in : STD_LOGIC_VECTOR(15 DOWNTO 0);
  signal z_in :  STD_LOGIC_VECTOR(15 DOWNTO 0);
- signal theta :  STD_LOGIC_VECTOR(15 DOWNTO 0);
  signal i :      STD_LOGIC_VECTOR(4 DOWNTO 0);
  signal add_sub_x :  STD_LOGIC;
  signal add_sub_y :  STD_LOGIC;
@@ -190,166 +207,188 @@ signal clear_counter: STD_LOGIC := '0';
  signal x_out :  STD_LOGIC_VECTOR(15 DOWNTO 0); 
  signal y_out :  STD_LOGIC_VECTOR(15 DOWNTO 0);
  signal z_out :  STD_LOGIC_VECTOR(15 DOWNTO 0);
+ signal alu_clk: STD_LOGIC; 
+
+ signal write_flag :  STD_LOGIC := '0';
 
 
+----------------Latch-------------------
+--Initial values for x,y and z
+signal x_init : STD_LOGIC_VECTOR(15 downto 0);
+signal y_init : STD_LOGIC_VECTOR(15 downto 0);
+signal z_init : STD_LOGIC_VECTOR(15 downto 0);
+      
+--Input to latch from ram
+signal ram_out_x  : STD_LOGIC_VECTOR(15 downto 0);      
+signal ram_out_y  : STD_LOGIC_VECTOR(15 downto 0);   
+signal ram_out_z  : STD_LOGIC_VECTOR(15 downto 0);         
+      
+--Latch enable
+signal latch_en : STD_LOGIC := '0';
+
+--input select (0 for inital value, 1 for calculated value)      
+signal input_sel : STD_LOGIC;
+
+--Latch outputs
+signal latch_out_x  : STD_LOGIC_VECTOR(15 downto 0);      
+signal latch_out_y  : STD_LOGIC_VECTOR(15 downto 0);   
+signal latch_out_z  : STD_LOGIC_VECTOR(15 downto 0);    
 
 begin  
   --Debouncer for user button
   User_DB_C:      debouncer port map (clk_100Mhz => clk, reset => reset_btn_deb, PB_in => btnC, PB_out => user_btn_deb_c);
   User_DB_R:      debouncer port map (clk_100Mhz => clk, reset => reset_btn_deb, PB_in => btnR, PB_out => user_btn_deb_r);
-  
+  User_DB_L:      debouncer port map (clk_100Mhz => clk, reset => reset_btn_deb, PB_in => btnl, PB_out => user_btn_deb_l);
+
   --Debouncer for reset button
   Reset_DB:     debouncer port map (clk_100Mhz => clk, reset => reset_btn_deb, PB_in => btnU, PB_out => reset_btn_deb);
-  
-  --Hex driver to display "disp_data"
-  HEX:     hex_driver port map (clk => clk, reset => reset_btn_deb, done => done, d_in => disp_data, anodes => an, cathodes => seg);   
-  
+ 
   -- Edge detechtor for user button
   ED_C:      EdgeDetector port map(clk => clk, d => user_btn_deb_c, edge => btn_edge_c);
   ED_R:      EdgeDetector port map(clk => clk, d => user_btn_deb_r, edge => btn_edge_r);
+  ED_L:      EdgeDetector port map(clk => clk, d => user_btn_deb_l, edge => btn_edge_l);
+
+   --Hex driver to display "disp_data"
+  HEX:     hex_driver port map (clk => clk, reset => reset_btn_deb, done => done, d_in => disp_data, anodes => an, cathodes => seg);   
+  
   
   -- Finite state machine for CORDIC algorithm
-  CORDIC_FSM:     FSM port map(clk => clk, x => btn_edge_r, reset => reset_btn_deb, y => fsm_state);
+  USER_FSM:       FSM port map(clk => clk, x => btn_edge_r, reset => reset_btn_deb, y => fsm_state);
+  
+  CORDIC_FSM:     FSM port map(clk => clk, x => btn_edge_l, reset => reset_btn_deb, y => iteration);
+
+
+  X_LATCH:        LATCH_16B port map(input_data0 => x_init, input_data1 => ram_out_x, enable => latch_en, input_sel => input_sel, output_data => latch_out_x);
+  Y_LATCH:        LATCH_16B port map(input_data0 => y_init, input_data1 => ram_out_y, enable => latch_en, input_sel => input_sel, output_data => latch_out_y);
+  Z_LATCH:        LATCH_16B port map(input_data0 => z_init, input_data1 => ram_out_z, enable => latch_en, input_sel => input_sel, output_data => latch_out_z);   
   
   --RAM
   
     RAM:          RAM16 port map(
-                  clk => clk, clear => btnU, 
+                  clk => clk, CE => CE, clear => reset_btn_deb, 
                   write_en_x => WE_x, write_en_y => WE_y, write_en_z => WE_z,
-                  d_x => write_data_x, d_y => write_data_y, d_z => write_data_z,  
-                  q_x => read_data_x, q_y => read_data_y, q_z => read_data_z);
+                  d_x => x_out, d_y => y_out, d_z => z_out,  
+                  q_x => ram_out_x, q_y => ram_out_y, q_z => ram_out_z);
 
-  --LUT
+
      LUT:          ROM port map(address => LUT_address, q => LUT_data);
     
     --counter
-    C1:         COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_c, count_out => cout);
+    Data_counter:           COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_c, count_out => cout);
+    --Iteration_Counter:      COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_l, count_out => iteration);
     
-    ALU1:        alu port map(clk => clk, x_in => x_in, y_in =>y_in, z_in => z_in, theta => theta, i => i, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z,x_out=> x_out, y_out => y_out, z_out => z_out); 
+    ALU1:        alu port map(clk => clk, x_in => latch_out_x, y_in =>latch_out_y, z_in => latch_out_z, theta => LUT_data, i => iteration, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z,x_out=> x_out, y_out => y_out, z_out => z_out); 
     
-    CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, fsm_state) IS
+    CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, btn_edge_l, fsm_state, iteration) IS
     BEGIN
     done <= '1';
     
     CASE fsm_state IS 
     WHEN x"0" => --User input x variable
-        led <= x"0000";
+        led <= x"1000";
+        input_sel <= '0';
+        latch_en <='1';
         disp_data <= sw;
         if btn_edge_c = '1' then
-            write_data_x <= sw;
-            WE_x <= '1';
-        ELSE
-            WE_x <= '0';
+            x_init <= sw;
         END IF;
         
     WHEN x"1" => --User input y variable
-        led <= x"0001";
+        led <= x"2000";
+        input_sel <= '0';
+        latch_en <='1';        
         disp_data <= sw;
         if btn_edge_c = '1' then
-            write_data_y <= sw;
-            WE_y <= '1';
-        ELSE
-            WE_y <= '0';
+            y_init <= sw;
         END IF;        
         
     WHEN x"2" => --User input z variable 
-        led <= x"0002";
+        led <= x"4000";
+        input_sel <= '0';
+        latch_en <='1';        
         disp_data <= sw;
         if btn_edge_c = '1' then
-            write_data_z <= sw;
-            WE_z <= '1';
-        ELSE
-            WE_z <= '0';
+            z_init <= sw;
         END IF;        
         
     WHEN x"3" => --loop through input data
-        led <= x"0003";
+        input_sel <= '0';
+        latch_en <='1';
         
         CASE cout IS
-        WHEN  x"0000" =>
-        disp_data <= read_data_x;
-        WHEN  x"0001" =>
-        disp_data <= read_data_y;
-        WHEN  x"0002" =>
-        disp_data <= read_data_z; 
+        WHEN  x"0" =>
+            led <= x"0001";
+            disp_data <= latch_out_x;
+        WHEN  x"1" =>
+            led <= x"0002";
+            disp_data <= latch_out_y;
+        WHEN  x"2" =>
+            led <= x"0004";
+            disp_data <= latch_out_z; 
         WHEN OTHERS =>
-        IF cout >= x"0003" THEN
-            clear_counter <= '1';
-        else
-            clear_counter <= '0';
-        END IF;
-        disp_data <= read_data_x;
+            IF cout >= x"3" THEN
+                clear_counter <= '1';
+            ELSIF cout < x"3" THEN
+                clear_counter <= '0';
+            END IF;
         END CASE;
         
     WHEN x"4" => --Run CORDIC algorithm 
-        led <= x"0004"; 
-        
-        x_in <= read_data_x; 
-        y_in <= read_data_y; 
-        z_in <= read_data_z;         
-        
-        FOR index in 0 to 15 LOOP
-                
-                IF index > 0 THEN
-                x_in <= x_out;
-                y_in <= y_out;
-                z_in <= z_out;
-                ELSE
-                NULL;
-                END IF;
-                
-                i <= STD_LOGIC_VECTOR(TO_UNSIGNED(index, 5));
-                LUT_address <= i(3 downto 0);
-                theta <= LUT_data;
-                
-                --mu 
-                IF z_in < x"0000" THEN
-                    add_sub_x <= '1';
-                    add_sub_y <= '1';
-                    add_sub_z <= '1';
-                ELSE
-                    add_sub_x <= '0';
-                    add_sub_y <= '0';
-                    add_sub_z <= '0';
-                END IF;
- 
-            IF z_out = x"0000" then
-            write_data_x <= x_out;
-            write_data_y <= y_out;
-            write_data_z <= z_out;
-            WE_x <= '1';
-            WE_y <= '1';
-            WE_z <= '1';
-            led <= x"7777";
-            exit;
-            END IF;        
-        END LOOP;
-        
-    WHEN x"5" => --Run CORDIC algorithm 
-       led <= x"0005"; 
+    
+    latch_en <= '1';
+    WE_x <= '1';
+    WE_y <= '1';
+    WE_z <= '1';        
+    disp_data <= ram_out_z;
 
+    --Load inital values in first itteration
+    IF iteration = x"0" THEN
+        input_sel <= '0';
+        ELSIF iteration > x"0" THEN
+        input_sel <= '1';    
+    END IF;        
+    
+        
+    IF iteration = x"F" THEN
+        led <= x"5555";
+        ELSE
+        led <= (15 downto iteration'length => '0') & iteration;
+    END IF;
+   
+        IF SIGNED(ram_out_z) > 0 THEN 
+        add_sub_x <= '1';
+        add_sub_y <= '0'; 
+        add_sub_z <= '1';
+        ELSE
+        add_sub_x <= '0';
+        add_sub_y <= '1'; 
+        add_sub_z <= '0';
+        END IF;      
+
+--Attach clock to inc pin on counter (Using btnL for now)
+    
+    
+    WHEN x"5" => --Run CORDIC algorithm 
+    led <= x"0005"; 
+        
         CASE cout IS
-        WHEN  x"0000" =>
-        disp_data <= read_data_x;
-        WHEN  x"0001" =>
-        disp_data <= read_data_y;
-        WHEN  x"0002" =>
-        disp_data <= read_data_z; 
+        WHEN  x"0" =>
+            led <= x"0001";
+            disp_data <= ram_out_x;
+        WHEN  x"1" =>
+            led <= x"0002";
+            disp_data <= ram_out_y;
+        WHEN  x"2" =>
+            led <= x"0004";
+            disp_data <= ram_out_z; 
         WHEN OTHERS =>
-        IF cout >= x"0003" THEN
-            clear_counter <= '1';
-        else
-            clear_counter <= '0';
-        END IF;
-        disp_data <= read_data_x;
+            IF cout >= x"3" THEN
+                clear_counter <= '1';
+            ELSIF cout < x"3" THEN
+                clear_counter <= '0';
+            END IF;
         END CASE;
         
-    WHEN x"6" => --Run CORDIC algorithm 
-       led <= x"0006"; 
-
-    WHEN x"7" => --Run CORDIC algorithm 
-       led <= x"0007";
-     
     WHEN OTHERS =>
         led <= x"ffff";
         disp_data <= sw;

@@ -36,6 +36,7 @@ use work.CORDIC_package.ALL;
 entity RAM16 is
 PORT ( 
     clk         :IN STD_LOGIC;
+    CE          :IN STD_LOGIC;
     clear       :IN STD_LOGIC;
     write_en_x    :IN STD_LOGIC;
     write_en_y    :IN STD_LOGIC;
@@ -59,7 +60,7 @@ begin
     RW: process(clk,clear, write_en_x, write_en_y, write_en_z)
     begin   
        IF clear = '1' THEN ram <= (others => (others => '0'));
-       end if;          
+       ELSE          
             if rising_edge(clk) then 
                 q_x <= ram(to_integer(UNSIGNED(x_address)));
                 q_y <= ram(to_integer(UNSIGNED(y_address)));
@@ -73,7 +74,8 @@ begin
                 end if;                
                 if write_en_z = '1' then
                     ram(to_integer(UNSIGNED(z_address))) <= d_z;
-                end if;                
-             end if;
+                END IF;                
+             END IF;
+        END IF;
     end process RW;
 end Behavioral;

@@ -35,7 +35,7 @@ entity alu is
         y_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
         z_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
         theta : in STD_LOGIC_VECTOR(15 DOWNTO 0);
-        i : in STD_LOGIC_VECTOR(4 DOWNTO 0);
+        i : in STD_LOGIC_VECTOR(3 DOWNTO 0);
         add_sub_x : in STD_LOGIC;
         add_sub_y : in STD_LOGIC;
         add_sub_z : in STD_LOGIC;
@@ -64,9 +64,9 @@ architecture computation of alu is
         conversion: process(clk) is begin
             if rising_edge(clk)then 
                 -- xin -+ yin
-                x_signed <= shift_right(signed(y_in),1);
+                x_signed <= shift_right(signed(y_in),to_integer(UNSIGNED(i)));
                 --yin +-xin
-                y_signed <= shift_right(signed(x_in),1);
+                y_signed <= shift_right(signed(x_in),to_integer(UNSIGNED(i)));
                 --zin-+thetain
                 theta_signed <= signed(theta);
                 
