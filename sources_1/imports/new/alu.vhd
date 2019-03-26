@@ -20,8 +20,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
-library xil_deafultlib;
-use xil_deafultlib.all;
+--library xil_deafultlib;
+--use xil_deafultlib.all;
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -59,52 +59,34 @@ architecture computation of alu is
     
     SIGNAL x_signed : signed(15 downto 0)   := (others => '0');
     SIGNAL y_signed : signed(15 downto 0)   := (others => '0');
-    SIGNAL theta_signed : signed(15 downto 0)   := (others => '0');
+    SIGNAL theta_signed : STD_LOGIC_VECTOR(15 downto 0)   := (others => '0');
+    
     begin
-        conversion: process(clk) is begin
-            if rising_edge(clk)then 
-                -- xin -+ yin
-                x_signed <= shift_right(signed(y_in),to_integer(UNSIGNED(i)));
-                --yin +-xin
-                y_signed <= shift_right(signed(x_in),to_integer(UNSIGNED(i)));
-                --zin-+thetain
-                theta_signed <= signed(theta);
+    
+    conversion: process(x_in,y_in,z_in, add_sub_x,add_sub_y, add_sub_z, theta,i, x_signed, y_signed) is begin
+     
+                x_signed <= shift_right(signed(y_in),to_integer(unsigned(i)));
+                y_signed <= shift_right(signed(x_in),to_integer(unsigned(i)));
                 
                 if add_sub_x = '1' then
-                   x_signed <= - x_signed;    
+                    x_out <= STD_LOGIC_VECTOR(signed(x_in) - signed(x_signed));
+                ELSE 
+                    x_out <= STD_LOGIC_VECTOR(signed(x_in) + signed(x_signed));                  
                 end if;
+                
                 if add_sub_y = '1' then
-                   y_signed <= - y_signed;
+                    y_out <= STD_LOGIC_VECTOR(signed(y_in) - signed(y_signed));
+                ELSE 
+                    y_out <= STD_LOGIC_VECTOR(signed(y_in) + signed(y_signed));                  
                 end if;
-                if add_sub_z = '1' then
-                   theta_signed <= - theta_signed;
-                end if;
-            end if;
+
+                IF add_sub_z = '1' THEN
+                z_out <= STD_LOGIC_VECTOR(signed(z_in) - signed(theta));
+                ELSE
+                z_out <= STD_LOGIC_VECTOR(signed(z_in) + signed(theta));
+                END IF;
+                
         end process conversion;
         
-        x_out <= STD_LOGIC_VECTOR(signed(x_in) + y_signed);
-        y_out <= STD_LOGIC_VECTOR(signed(y_in) + x_signed);
-        z_out <= STD_LOGIC_VECTOR(signed(z_in) + theta_signed);
-        
---        calcx: cordicadder16 port map (
---            a => x_in,
---            b => std_logic_vector (x_signed),
---            clk => clk,
---            sum => x_out
---        );
-        
---        calcy: cordicadder16 port map (
---            a => y_in,
---            b => std_logic_vector (y_signed),
---            clk => clk,
---            sum => y_out
---        );
-        
---        calcz: cordicadder16 port map (
---            a => z_in,
---            b => std_logic_vector (theta_signed),
---            clk => clk,
---            sum => z_out
---            );
          
 end computation;

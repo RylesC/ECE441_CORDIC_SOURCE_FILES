@@ -278,7 +278,7 @@ begin
     Data_counter:           COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_c, count_out => cout);
     --Iteration_Counter:      COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_l, count_out => iteration);
     
-    ALU1:        alu port map(clk => clk, x_in => latch_out_x, y_in =>latch_out_y, z_in => latch_out_z, theta => LUT_data, i => iteration, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z,x_out=> x_out, y_out => y_out, z_out => z_out); 
+    ALU1:        alu port map(clk => clk, x_in => latch_out_x, y_in =>latch_out_y, z_in => latch_out_z, theta => LUT_data, i => iteration, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z, x_out=> x_out, y_out => y_out, z_out => z_out); 
     
     CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, btn_edge_l, fsm_state, iteration) IS
     BEGIN
@@ -339,8 +339,8 @@ begin
     WE_x <= btn_edge_l;
     WE_y <= btn_edge_l;
     WE_z <= btn_edge_l;
-    --latch_en <= '1';     
-    disp_data <= latch_out_z;
+  
+    disp_data <= x_out;
 
     --Load inital values in first itteration
     IF iteration = x"0" THEN
