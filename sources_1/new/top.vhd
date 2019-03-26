@@ -222,6 +222,7 @@ signal z_init : STD_LOGIC_VECTOR(15 downto 0);
 signal ram_out_x  : STD_LOGIC_VECTOR(15 downto 0);      
 signal ram_out_y  : STD_LOGIC_VECTOR(15 downto 0);   
 signal ram_out_z  : STD_LOGIC_VECTOR(15 downto 0);         
+signal theta      : STD_LOGIC_VECTOR(15 downto 0);
       
 --Latch enable
 signal latch_en : STD_LOGIC := '0';
@@ -258,9 +259,9 @@ begin
   CORDIC_FSM:     FSM port map(clk => clk, x => btn_edge_l, reset => reset_btn_deb, y => iteration);
 
 
-  X_LATCH:        LATCH_16B port map(input_data0 => x_init, input_data1 => ram_out_x, enable => latch_en, input_sel => input_sel, output_data => latch_out_x);
-  Y_LATCH:        LATCH_16B port map(input_data0 => y_init, input_data1 => ram_out_y, enable => latch_en, input_sel => input_sel, output_data => latch_out_y);
-  Z_LATCH:        LATCH_16B port map(input_data0 => z_init, input_data1 => ram_out_z, enable => latch_en, input_sel => input_sel, output_data => latch_out_z);   
+  X_LATCH:        LATCH_16B port map(input_data0 => x_init, input_data1 => ram_out_x, enable => '1', input_sel => input_sel, output_data => latch_out_x);
+  Y_LATCH:        LATCH_16B port map(input_data0 => y_init, input_data1 => ram_out_y, enable => '1', input_sel => input_sel, output_data => latch_out_y);
+  Z_LATCH:        LATCH_16B port map(input_data0 => z_init, input_data1 => ram_out_z, enable => '1', input_sel => input_sel, output_data => latch_out_z);   
   
   --RAM
   
@@ -271,7 +272,7 @@ begin
                   q_x => ram_out_x, q_y => ram_out_y, q_z => ram_out_z);
 
 
-     LUT:          ROM port map(address => LUT_address, q => LUT_data);
+     LUT:          ROM port map(address => iteration, q => LUT_data);
     
     --counter
     Data_counter:           COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_c, count_out => cout);
@@ -287,7 +288,7 @@ begin
     WHEN x"0" => --User input x variable
         led <= x"1000";
         input_sel <= '0';
-        latch_en <='1';
+--        latch_en <='1';
         disp_data <= sw;
         if btn_edge_c = '1' then
             x_init <= sw;
@@ -296,7 +297,7 @@ begin
     WHEN x"1" => --User input y variable
         led <= x"2000";
         input_sel <= '0';
-        latch_en <='1';        
+        --latch_en <='1';        
         disp_data <= sw;
         if btn_edge_c = '1' then
             y_init <= sw;
@@ -305,7 +306,7 @@ begin
     WHEN x"2" => --User input z variable 
         led <= x"4000";
         input_sel <= '0';
-        latch_en <='1';        
+        --latch_en <='1';        
         disp_data <= sw;
         if btn_edge_c = '1' then
             z_init <= sw;
@@ -313,7 +314,7 @@ begin
         
     WHEN x"3" => --loop through input data
         input_sel <= '0';
-        latch_en <='1';
+        --latch_en <='1';
         
         CASE cout IS
         WHEN  x"0" =>
@@ -338,25 +339,23 @@ begin
     WE_x <= btn_edge_l;
     WE_y <= btn_edge_l;
     WE_z <= btn_edge_l;
-    latch_en <= '1';       
-    disp_data <= ram_out_z;
+    --latch_en <= '1';     
+    disp_data <= latch_out_z;
 
     --Load inital values in first itteration
     IF iteration = x"0" THEN
         input_sel <= '0';
-        latch_en <= btn_edge_l;
     ELSIF iteration = x"F" THEN
         led <= x"5555";
         WE_x <= '0';
         WE_y <= '0';
         WE_z <= '0';            
-    ELSE
+    ELSIF iteration > x"0" THEN
         input_sel <= '1';
-        latch_en <= btn_edge_l;
         led <= (15 downto iteration'length => '0') & iteration;          
     END IF;        
    
-        IF SIGNED(ram_out_z) > 0 THEN 
+        IF SIGNED(latch_out_z) >= 0 THEN 
         add_sub_x <= '1';
         add_sub_y <= '0'; 
         add_sub_z <= '1';
@@ -365,7 +364,7 @@ begin
         add_sub_y <= '1'; 
         add_sub_z <= '0';
         END IF;      
-
+        
 --Attach clock to inc pin on counter (Using btnL for now)
     
     

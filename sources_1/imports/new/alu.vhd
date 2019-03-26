@@ -82,25 +82,29 @@ architecture computation of alu is
             end if;
         end process conversion;
         
-        calcx: cordicadder16 port map (
-            a => x_in,
-            b => std_logic_vector (x_signed),
-            clk => clk,
-            sum => x_out
-        );
+        x_out <= STD_LOGIC_VECTOR(signed(x_in) + y_signed);
+        y_out <= STD_LOGIC_VECTOR(signed(y_in) + x_signed);
+        z_out <= STD_LOGIC_VECTOR(signed(z_in) + theta_signed);
         
-        calcy: cordicadder16 port map (
-            a => y_in,
-            b => std_logic_vector (y_signed),
-            clk => clk,
-            sum => y_out
-        );
+--        calcx: cordicadder16 port map (
+--            a => x_in,
+--            b => std_logic_vector (x_signed),
+--            clk => clk,
+--            sum => x_out
+--        );
         
-        calcz: cordicadder16 port map (
-            a => z_in,
-            b => std_logic_vector (theta_signed),
-            clk => clk,
-            sum => z_out
-            );
+--        calcy: cordicadder16 port map (
+--            a => y_in,
+--            b => std_logic_vector (y_signed),
+--            clk => clk,
+--            sum => y_out
+--        );
+        
+--        calcz: cordicadder16 port map (
+--            a => z_in,
+--            b => std_logic_vector (theta_signed),
+--            clk => clk,
+--            sum => z_out
+--            );
          
 end computation;
