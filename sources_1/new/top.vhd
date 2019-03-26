@@ -334,26 +334,27 @@ begin
         END CASE;
         
     WHEN x"4" => --Run CORDIC algorithm 
-    
-    latch_en <= '1';
-    WE_x <= '1';
-    WE_y <= '1';
-    WE_z <= '1';        
+   
+    WE_x <= btn_edge_l;
+    WE_y <= btn_edge_l;
+    WE_z <= btn_edge_l;
+    latch_en <= '1';       
     disp_data <= ram_out_z;
 
     --Load inital values in first itteration
     IF iteration = x"0" THEN
         input_sel <= '0';
-        ELSIF iteration > x"0" THEN
-        input_sel <= '1';    
-    END IF;        
-    
-        
-    IF iteration = x"F" THEN
+        latch_en <= btn_edge_l;
+    ELSIF iteration = x"F" THEN
         led <= x"5555";
-        ELSE
-        led <= (15 downto iteration'length => '0') & iteration;
-    END IF;
+        WE_x <= '0';
+        WE_y <= '0';
+        WE_z <= '0';            
+    ELSE
+        input_sel <= '1';
+        latch_en <= btn_edge_l;
+        led <= (15 downto iteration'length => '0') & iteration;          
+    END IF;        
    
         IF SIGNED(ram_out_z) > 0 THEN 
         add_sub_x <= '1';
