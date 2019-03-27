@@ -29,64 +29,76 @@ use ieee.numeric_std.all;
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
 --use UNISIM.VComponents.all;
-entity alu is
-  Port (
-        x_in : in STD_LOGIC_VECTOR(15 DOWNTO 0); 
-        y_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
-        z_in : in STD_LOGIC_VECTOR(15 DOWNTO 0);
-        theta : in STD_LOGIC_VECTOR(15 DOWNTO 0);
-        i : in STD_LOGIC_VECTOR(3 DOWNTO 0);
-        add_sub_x : in STD_LOGIC;
-        add_sub_y : in STD_LOGIC;
-        add_sub_z : in STD_LOGIC;
-        x_out : out STD_LOGIC_VECTOR(15 DOWNTO 0); 
-        y_out : out STD_LOGIC_VECTOR(15 DOWNTO 0);
-        z_out : out STD_LOGIC_VECTOR(15 DOWNTO 0);
-        clk: in std_logic
+ENTITY alu IS
+  PORT (
+        x_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0); 
+        y_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+        z_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+        theta : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+        i : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+        add_sub_x : IN STD_LOGIC;
+        add_sub_y : IN STD_LOGIC;
+        add_sub_z : IN STD_LOGIC;
+        x_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0); 
+        y_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+        z_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
   );
   
-end alu;
-architecture computation of alu is
-    COMPONENT cordicadder16 is
-    port (
+END alu;
+ARCHITECTURE computation OF alu IS
+    COMPONENT cordicadder16 IS
+    PORT (
         a: IN std_logic_vector (15 DOWNTO 0);
         b: IN std_logic_vector (15 DOWNTO 0);
-        clk: IN std_logic;
         sum: OUT std_logic_vector(15 DOWNTO 0);
         cout: OUT std_logic
     );
     END COMPONENT;
     
-    SIGNAL x_signed : signed(15 downto 0)   := (others => '0');
-    SIGNAL y_signed : signed(15 downto 0)   := (others => '0');
-    SIGNAL theta_signed : STD_LOGIC_VECTOR(15 downto 0)   := (others => '0');
+    SIGNAL x_signed : signed(15 DOWNTO 0)   := (OTHERS => '0');
+    SIGNAL y_signed : signed(15 DOWNTO 0)   := (OTHERS => '0');
+    SIGNAL theta_signed : signed(15 DOWNTO 0)   := (OTHERS => '0');
     
-    begin
+    BEGIN
     
-    conversion: process(x_in,y_in,z_in, add_sub_x,add_sub_y, add_sub_z, theta,i, x_signed, y_signed) is begin
-     
-                x_signed <= shift_right(signed(y_in),to_integer(unsigned(i)));
-                y_signed <= shift_right(signed(x_in),to_integer(unsigned(i)));
+    conversion: PROCESS(x_in, y_in, z_in, add_sub_x, add_sub_y, add_sub_z, theta,i) IS BEGIN
                 
-                if add_sub_x = '1' then
-                    x_out <= STD_LOGIC_VECTOR(signed(x_in) - signed(x_signed));
-                ELSE 
-                    x_out <= STD_LOGIC_VECTOR(signed(x_in) + signed(x_signed));                  
-                end if;
-                
-                if add_sub_y = '1' then
-                    y_out <= STD_LOGIC_VECTOR(signed(y_in) - signed(y_signed));
-                ELSE 
-                    y_out <= STD_LOGIC_VECTOR(signed(y_in) + signed(y_signed));                  
-                end if;
-
-                IF add_sub_z = '1' THEN
-                z_out <= STD_LOGIC_VECTOR(signed(z_in) - signed(theta));
+                IF add_sub_x = '1' THEN
+                    x_signed <= -(shift_right(signed(y_in),to_integer(unsigned(i))));
                 ELSE
-                z_out <= STD_LOGIC_VECTOR(signed(z_in) + signed(theta));
+                    x_signed <= shift_right(signed(y_in),to_integer(unsigned(i)));
                 END IF;
                 
-        end process conversion;
+                IF add_sub_y = '1' THEN
+                    y_signed <= -(shift_right(signed(x_in),to_integer(unsigned(i)))); 
+                ELSE
+                    y_signed <= shift_right(signed(x_in),to_integer(unsigned(i)));              
+                END IF;
+
+                IF add_sub_z = '1' THEN
+                    theta_signed <= -(signed(theta));
+                ELSE
+                    theta_signed <= signed(theta); 
+                END IF;
+                
+        END PROCESS conversion;
         
+    calcx: cordicadder16 PORT MAP (
+        a => x_in,
+        b => std_logic_vector (x_signed),
+        sum => x_out
+    );
+    
+    calcy: cordicadder16 PORT MAP (
+        a => y_in,
+        b => std_logic_vector (y_signed),
+        sum => y_out
+    );
+    
+    calcz: cordicadder16 PORT MAP (
+        a => z_in,
+        b => std_logic_vector (theta_signed),
+        sum => z_out
+    );   
          
-end computation;
+END computation;

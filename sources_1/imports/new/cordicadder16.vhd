@@ -27,7 +27,6 @@ entity cordicadder16 is
     port (
         a: IN std_logic_vector (15 DOWNTO 0);
         b: IN std_logic_vector (15 DOWNTO 0);
-        clk: IN std_logic;
         sum: OUT std_logic_vector(15 DOWNTO 0);
         cout: OUT std_logic
     );
@@ -38,7 +37,6 @@ ARCHITECTURE gen OF cordicadder16 IS
             a : in STD_LOGIC;
             b : in STD_LOGIC;
             cin : in STD_LOGIC;
-            clk: in STD_LOGIC;
             d : out STD_LOGIC;
             cout : out STD_LOGIC
             );
@@ -54,31 +52,17 @@ Adders:
                 a => a(i), 
                 b => b(i),
                 cin => '0',
-                clk => clk,
                 d => sum(i),
                 cout => carry_sig(i)            
             );
         end generate;
     ADDN:
-        if i < 15 and i /= 0 generate
+        if i < 16 and i /= 0 generate
             Add1:
             adder port map (
                 a => a(i), 
                 b => b(i),
                 cin => carry_sig(i-1),
-                clk => clk,
-                d => sum(i),
-                cout => carry_sig(i)  
-            );          
-        end generate;
-    ADD15:
-        if i = 15 generate
-            Add1:
-            adder port map (
-                a => a(i), 
-                b => b(i),
-                cin => carry_sig(i-1),
-                clk => clk,
                 d => sum(i),
                 cout => carry_sig(i)  
             );          
