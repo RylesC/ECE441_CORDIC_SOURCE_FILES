@@ -35,7 +35,6 @@ entity adder is
     Port ( a : in STD_LOGIC;
            b : in STD_LOGIC;
            cin : in STD_LOGIC;
-           clk: in STD_LOGIC;
            d : out STD_LOGIC;
            cout : out STD_LOGIC);
 end adder;
@@ -43,10 +42,8 @@ end adder;
 architecture Behavioral of adder is
 
 begin
-    process(clk) begin
-        if rising_edge(clk) then
+    process(a,b,cin) begin
             d <= (a xor b) xor cin;
-            cout <= (a and b) or ((a xor b) and cin); 
-        end if;
+            cout <= (a and b) or ((a xor b) and cin);
     end process;
 end Behavioral;
