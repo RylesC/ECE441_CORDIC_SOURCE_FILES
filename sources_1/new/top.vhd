@@ -117,6 +117,14 @@ component ROM is
      q :            OUT STD_LOGIC_VECTOR (15 downto 0));
  end component ROM;
     
+component clk_div_2 is
+PORT(
+    clk: IN STD_LOGIC;
+    reset: IN STD_LOGIC;
+    clkdiv2: OUT STD_LOGIC
+    );
+end COMPONENT clk_div_2;
+
 component alu is 
   Port (
         x_in : in STD_LOGIC_VECTOR(15 DOWNTO 0); 
@@ -229,6 +237,9 @@ signal latch_en : STD_LOGIC := '0';
 
 --input select (0 for inital value, 1 for calculated value)      
 signal input_sel : STD_LOGIC;
+signal cordic_iterate_en : STD_LOGIC := '0';
+signal clkdiv2: STD_LOGIC := '0';
+
 
 --Latch outputs
 signal latch_out_x  : STD_LOGIC_VECTOR(15 downto 0);      
@@ -256,7 +267,7 @@ begin
   -- Finite state machine for CORDIC algorithm
   USER_FSM:       FSM port map(clk => clk, x => btn_edge_r, reset => reset_btn_deb, y => fsm_state);
   
-  CORDIC_FSM:     FSM port map(clk => clk, x => btn_edge_l, reset => reset_btn_deb, y => iteration);
+  CORDIC_FSM:     FSM port map(clk => clk, x => cordic_iterate_en, reset => reset_btn_deb, y => iteration);
 
 
   X_LATCH:        LATCH_16B port map(input_data0 => x_init, input_data1 => ram_out_x, enable => '1', input_sel => input_sel, output_data => latch_out_x);
@@ -272,6 +283,8 @@ begin
                   q_x => ram_out_x, q_y => ram_out_y, q_z => ram_out_z);
 
 
+    CLK_DIV:       clk_div_2 port map(clk => clk, reset => reset_btn_deb, clkdiv2 => clkdiv2);
+    
      LUT:          ROM port map(address => iteration, q => LUT_data);
     
     --counter
@@ -280,7 +293,7 @@ begin
     
     ALU1:        alu port map(clk => clk, x_in => latch_out_x, y_in =>latch_out_y, z_in => latch_out_z, theta => LUT_data, i => iteration, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z, x_out=> x_out, y_out => y_out, z_out => z_out); 
     
-    CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, btn_edge_l, fsm_state, iteration) IS
+    CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, clkdiv2, fsm_state, iteration) IS
     BEGIN
     done <= '1';
     
@@ -314,7 +327,6 @@ begin
         
     WHEN x"3" => --loop through input data
         input_sel <= '0';
-        --latch_en <='1';
         
         CASE cout IS
         WHEN  x"0" =>
@@ -336,12 +348,14 @@ begin
         
     WHEN x"4" => --Run CORDIC algorithm 
    
-    WE_x <= btn_edge_l;
-    WE_y <= btn_edge_l;
-    WE_z <= btn_edge_l;
-  
-    disp_data <= x_out;
-
+    WE_x <= clkdiv2;
+    WE_y <= clkdiv2;
+    WE_z <= clkdiv2;
+    --done <= '0';
+    cordic_iterate_en <= clkdiv2;
+    
+    disp_data <= ram_out_z;          
+    
     --Load inital values in first itteration
     IF iteration = x"0" THEN
         input_sel <= '0';
@@ -349,10 +363,11 @@ begin
         led <= x"5555";
         WE_x <= '0';
         WE_y <= '0';
-        WE_z <= '0';            
+        WE_z <= '0';
+        cordic_iterate_en <= '0';            
     ELSIF iteration > x"0" THEN
         input_sel <= '1';
-        led <= (15 downto iteration'length => '0') & iteration;          
+        led <= (15 downto iteration'length => '0') & iteration;         
     END IF;        
    
         IF SIGNED(latch_out_z) >= 0 THEN 
@@ -365,9 +380,6 @@ begin
         add_sub_z <= '0';
         END IF;      
         
---Attach clock to inc pin on counter (Using btnL for now)
-    
-    
     WHEN x"5" => --Run CORDIC algorithm 
     led <= x"0005"; 
         
