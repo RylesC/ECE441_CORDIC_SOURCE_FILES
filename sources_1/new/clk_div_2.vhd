@@ -50,7 +50,7 @@ BEGIN
     ELSE
         IF rising_edge(clk) THEN
         n <= n + 1;   
-            IF (n < x"F000") THEN
+            IF (n < x"0001") THEN
                 clkdiv2 <= '0';
             ELSE
                 clkdiv2 <= '1';

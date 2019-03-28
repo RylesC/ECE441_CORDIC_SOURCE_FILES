@@ -137,8 +137,7 @@ component alu is
         add_sub_z : in STD_LOGIC;
         x_out : out STD_LOGIC_VECTOR(15 DOWNTO 0); 
         y_out : out STD_LOGIC_VECTOR(15 DOWNTO 0);
-        z_out : out STD_LOGIC_VECTOR(15 DOWNTO 0);
-        clk   : in STD_LOGIC
+        z_out : out STD_LOGIC_VECTOR(15 DOWNTO 0)
         );
   end component alu;
 
@@ -291,7 +290,7 @@ begin
     Data_counter:           COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_c, count_out => cout);
     --Iteration_Counter:      COUNTER_4BIT port map(clk => clk, reset => btn_edge_r, clear => clear_counter, inc => btn_edge_l, count_out => iteration);
     
-    ALU1:        alu port map(clk => clk, x_in => latch_out_x, y_in =>latch_out_y, z_in => latch_out_z, theta => LUT_data, i => iteration, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z, x_out=> x_out, y_out => y_out, z_out => z_out); 
+    ALU1:        alu port map(x_in => latch_out_x, y_in =>latch_out_y, z_in => latch_out_z, theta => LUT_data, i => iteration, add_sub_x => add_sub_x, add_sub_y => add_sub_y, add_sub_z => add_sub_z, x_out=> x_out, y_out => y_out, z_out => z_out); 
     
     CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, clkdiv2, fsm_state, iteration) IS
     BEGIN
