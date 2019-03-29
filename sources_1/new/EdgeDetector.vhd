@@ -1,49 +1,35 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 02/12/2019 02:44:09 PM
--- Design Name: 
+-- Engineer: Riley Cambon
 -- Module Name: EdgeDetector - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
+-- Project Name: CORDIC
+-- Description: Falling edge detector
 ----------------------------------------------------------------------------------
 
-
 library ieee;
-use ieee.std_logic_1164.all;
+use ieee.STD_LOGIC_1164.all;
 
-entity EdgeDetector is
-   port (
-      clk      :in std_logic;
-      d        :in std_logic;
-      edge     :out std_logic
+ENTITY EdgeDetector IS
+   PORT (
+      clk      :IN STD_LOGIC;   --Clock
+      d        :IN STD_LOGIC;   --Signal input
+      edge     :OUT STD_LOGIC   --Edge output
    );
-end EdgeDetector;
+END EdgeDetector;
 
-architecture EdgeDetector_rtl of EdgeDetector is
+ARCHITECTURE Behavioral OF EdgeDetector IS
 
-   signal reg1 :std_logic;
-   signal reg2 :std_logic;
+   SIGNAL d1 :STD_LOGIC;
+   SIGNAL d2 :STD_LOGIC;
 
-begin
-reg: process(clk)
-begin
-   if rising_edge(clk) then
-      reg1  <= d;
-      reg2  <= reg1;
-  end if;
-end process;
+BEGIN
+reg: PROCESS(clk)
+    BEGIN
+       IF rising_edge(clk) THEN
+          d1  <= d;
+          d2  <= d1;
+      END IF;
+    END PROCESS;
 
-edge <= reg1 and (not reg2);
+edge <= d1 AND (NOT d2);
 
-end EdgeDetector_rtl;
+END Behavioral;

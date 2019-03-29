@@ -10,7 +10,7 @@
 -- Tool Versions: 
 -- Description: 
 -- 
--- Dependencies: 
+-- DepENDencies: 
 -- 
 -- Revision:
 -- Revision 0.01 - File Created
@@ -22,28 +22,19 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
 entity adder is
-    Port ( a : in STD_LOGIC;
-           b : in STD_LOGIC;
-           cin : in STD_LOGIC;
-           d : out STD_LOGIC;
-           cout : out STD_LOGIC);
-end adder;
+    PORT ( a : IN STD_LOGIC;
+           b : IN STD_LOGIC;
+           cin : IN STD_LOGIC;
+           d : OUT STD_LOGIC;
+           cout : OUT STD_LOGIC);
+END adder;
 
-architecture Behavioral of adder is
+ARCHITECTURE Behavioral of adder is
 
 begin
     process(a,b,cin) begin
             d <= (a xor b) xor cin;
             cout <= (a and b) or ((a xor b) and cin);
-    end process;
-end Behavioral;
+    END process;
+END Behavioral;

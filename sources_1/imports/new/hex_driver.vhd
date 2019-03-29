@@ -7,22 +7,22 @@
 ----------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.std_logic_unsigned.all;
+use IEEE.STD_LOGIC_unsigned.all;
 
 entity hex_driver is
 
-    Port (
-	clk	: in STD_LOGIC;
-    reset	: in STD_LOGIC;
-    done	: in STD_LOGIC;
-	d_in	: in STD_LOGIC_VECTOR ( 15 downto 0 );
-	anodes 	: out STD_LOGIC_VECTOR ( 3 downto 0 );
-	cathodes: out STD_LOGIC_VECTOR ( 6 downto 0 )
+    PORT (
+	clk	:     IN STD_LOGIC;
+    reset	: IN STD_LOGIC;
+    done	: IN STD_LOGIC;
+	d_in	: IN STD_LOGIC_VECTOR ( 15 downto 0 );
+	anodes 	: OUT STD_LOGIC_VECTOR ( 3 downto 0 );
+	cathodes: OUT STD_LOGIC_VECTOR ( 6 downto 0 )
 	);
   
-end hex_driver;
+END hex_driver;
 
-architecture behavioural of hex_driver is
+ARCHITECTURE behavioural of hex_driver is
 
 -- Counting number of clock ticks (28 bits required for 100,000,000 ticks !
   signal refresh_display_counter: STD_LOGIC_VECTOR (27 downto 0);    
@@ -48,9 +48,9 @@ begin
 
 		 else
 			refresh_display_counter <= refresh_display_counter + x"0000001";
-		end if;
-	end if;
-end process;
+		END if;
+	END if;
+END process;
 
 refresh_period_reached <= '1' when refresh_display_counter = x"000BC1F" else '0';
 
@@ -63,9 +63,9 @@ begin
           if(refresh_period_reached = '1') then
                 -- increment the counter when the maximum number of clock ticks has been reached            
                 digit_enable_counter <= digit_enable_counter + 1;   
-             end if;
-        end if;
-end process;
+             END if;
+        END if;
+END process;
 
 
 process(hex_digit_to_display, done )
@@ -90,18 +90,18 @@ begin
 		when "1101" => cathodes <= "0100001"; -- "d"
 		when "1110" => cathodes <= "0000110"; -- "E"
 		when "1111" => cathodes <= "0001110"; -- "F"
-	   end case;
+	   END case;
 	
 	else
 	   cathodes <= "0111111";
-	end if;
-end process;
+	END if;
+END process;
 
 
 process( clk, reset, digit_enable_counter )
 begin
     if(reset = '1') then
-		anodes <= b"1111";  -- disable all 4 digits while in reset (i.e. blank the display)
+		anodes <= b"1111";  -- disable all 4 digits while INreset (i.e. blank the display)
     
 	elsif(rising_edge( clk )) then
 
@@ -125,8 +125,8 @@ begin
                     anodes <= b"1110"; -- enable AN0 (the right-most 7-seg display)
                     hex_digit_to_display <= d_in(3 downto 0);
 
-		end case;
-	end if;
-end process;
+		END case;
+	END if;
+END process;
 
-end behavioural;
+END behavioural;

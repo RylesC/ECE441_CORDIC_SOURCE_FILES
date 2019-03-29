@@ -20,54 +20,54 @@ use xil_deafultlib.all;
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
 -- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
+-- any Xilinx leaf cells INthis code.
 --library UNISIM;
 --use UNISIM.VComponents.all;
 entity cordicadder16 is
-    port (
-        a: IN std_logic_vector (15 DOWNTO 0);
-        b: IN std_logic_vector (15 DOWNTO 0);
-        sum: OUT std_logic_vector(15 DOWNTO 0);
-        cout: OUT std_logic
+    PORT (
+        a: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
+        b: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
+        sum: OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+        cout: OUT STD_LOGIC
     );
-end cordicadder16;
+END cordicadder16;
 ARCHITECTURE gen OF cordicadder16 IS
     COMPONENT adder 
         PORT(
-            a : in STD_LOGIC;
-            b : in STD_LOGIC;
-            cin : in STD_LOGIC;
-            d : out STD_LOGIC;
-            cout : out STD_LOGIC
+            a : IN STD_LOGIC;
+            b : IN STD_LOGIC;
+            cin: IN STD_LOGIC;
+            d : OUT STD_LOGIC;
+            cout : OUT STD_LOGIC
             );
      END COMPONENT;
-SIGNAL carry_sig: std_logic_vector(15 DOWNTO 0);
-BEGIN
+SIGNAL carry_sig: STD_LOGIC_VECTOR(15 DOWNTO 0);
+BEGin
 Adders:
-    for i in 0 to 15 generate
+    for i IN 0 to 15 generate
     ADD0:    
         if i = 0 generate
         Add1:
-            adder port map (
+            adder PORT map (
                 a => a(i), 
                 b => b(i),
                 cin => '0',
                 d => sum(i),
                 cout => carry_sig(i)            
             );
-        end generate;
+        END generate;
     ADDN:
         if i < 16 and i /= 0 generate
             Add1:
-            adder port map (
+            adder PORT map (
                 a => a(i), 
                 b => b(i),
                 cin => carry_sig(i-1),
                 d => sum(i),
                 cout => carry_sig(i)  
             );          
-        end generate;
-    end generate;
+        END generate;
+    END generate;
 Carry_Out:
     cout <= carry_sig(15);
-END architecture;
+END ARCHITECTURE;

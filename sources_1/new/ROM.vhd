@@ -1,17 +1,23 @@
+----------------------------------------------------------------------------------
+-- Engineer: Riley Cambon
+-- Module Name: ROM - Behavioral
+-- Project Name: CORDIC
+-- Description: Read only memory for LUT theta values 
+----------------------------------------------------------------------------------
 
  library ieee;
- use ieee.std_logic_1164.all;
+ use ieee.STD_LOGIC_1164.all;
  use ieee.numeric_std.all;
  
  ENTITY ROM IS
  PORT (
-     address :      IN STD_LOGIC_VECTOR (3 downto 0);
-     q :            OUT STD_LOGIC_VECTOR (15 downto 0));
- end ROM;
+     address :      IN STD_LOGIC_VECTOR (3 downto 0);       --Address for LUT
+     q :            OUT STD_LOGIC_VECTOR (15 downto 0));    --Theta value 
+ END ROM;
  
- architecture BEHAVIOR of ROM is
+ ARCHITECTURE BEHAVIOR OF ROM IS
  
- type ROMTABLE is array (0 to 15) of std_logic_vector (15 downto 0);
+ TYPE ROMTABLE IS ARRAY (0 TO 15) OF STD_LOGIC_VECTOR (15 downto 0);
 
 --Special angles for CORDIC
  constant romdata : romtable := (
@@ -32,14 +38,15 @@
     x"0002",
     x"0001"
  );
- begin
+ 
+ BEGIN
 
- process (address)
-     begin
+ PROCESS (address)
+     BEGIN
      
-     q <= romdata(to_integer(unsigned(address)));
-     end process;
+     q <= romdata(TO_INTEGER(UNSIGNED(address)));
+     END PROCESS;
      
- end BEHAVIOR;
+ END BEHAVIOR;
  
  

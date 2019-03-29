@@ -1,21 +1,8 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 03/27/2019 02:05:36 PM
--- Design Name: 
+-- Engineer: Riley Cambon
 -- Module Name: clk_div_2 - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
+-- Project Name: CORDIC
+-- Description: Clock divider with single clock cycle pulses 
 ----------------------------------------------------------------------------------
 
 
@@ -23,38 +10,35 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
-entity clk_div_2 is
+ENTITY clk_div_2 IS
 PORT(
-    clk: IN STD_LOGIC;
-    reset: IN STD_LOGIC;
-    clkdiv2: OUT STD_LOGIC
+    clk:        IN STD_LOGIC;   --Clock
+    reset:      IN STD_LOGIC;   --Reset
+    clkdiv2:    OUT STD_LOGIC   --Clock pulses at twice clock period 
     );
-end clk_div_2;
+END clk_div_2;
 
 
-architecture Behavioral of clk_div_2 is
+ARCHITECTURE Behavioral OF clk_div_2 IS
 
-SIGNAL n : UNSIGNED(15 downto 0)   := (others => '0');
+SIGNAL n : UNSIGNED(3 downto 0)   := (OTHERS => '0'); --Clock edge counter 
 
 BEGIN
+
+    --Sets clock output to pulse when counter reaches specified value
     PROCESS(clk, reset, n)
     BEGIN
     IF reset = '1' THEN
-        n <= x"0000";
+        n <= x"0";
         clkdiv2 <= '0';
     ELSE
         IF rising_edge(clk) THEN
         n <= n + 1;   
-            IF (n < x"0001") THEN
+            IF (n < x"1") THEN
                 clkdiv2 <= '0';
             ELSE
                 clkdiv2 <= '1';
-                n <= x"0000";
+                n <= x"0";
             END IF;
         END IF;
      END IF;

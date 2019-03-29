@@ -1,58 +1,37 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 02/12/2019 11:22:50 AM
--- Design Name: 
+-- Engineer: Riley Cambon
 -- Module Name: FSM - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
+-- Project Name: CORDIC
+-- Description: 2 Process Finite State Machine
 ----------------------------------------------------------------------------------
-
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.CORDIC_package.ALL;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
+ENTITY FSM IS
+ PORT ( 
+     clk:       IN STD_LOGIC;                       --Clock
+     x:         IN STD_LOGIC;                       --FSM input
+     reset:     IN STD_LOGIC;                       --Reset
+     y:         OUT STD_LOGIC_VECTOR(3 downto 0));  --FSM output
+END FSM;
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+ARCHITECTURE Behavioral OF FSM IS
 
-entity FSM is
- Port ( 
- clk:       IN std_logic;
- x:         IN std_logic;
- reset:     IN std_logic;
- y:         OUT std_logic_vector(3 downto 0));
-end FSM;
+SIGNAL current_state: state;    --Current state of FSM
+SIGNAL next_state: state;       --Next state of FSM
 
-architecture Behavioral of FSM is
-
-signal current_state: state;
-signal next_state: state;
-
-begin
-
-    cs: PROCESS (clk, reset) IS BEGIN
+BEGIN
+--------------- 2 process Moore FSM------------------- 
+    --Current state process
+    cs: PROCESS (clk, reset) IS BEGin
         IF reset = '1' THEN current_state <= ST0; --default state
         ELSIF rising_edge (clk) THEN current_state <= next_state;  --make next state current state
         END IF;
     END PROCESS cs;
     
+    --Next state process (16 states, increment to next state when x = '1')
     ns: PROCESS (current_state, x) IS BEGIN
         CASE current_state IS 
         WHEN ST0 => --User input x variable
@@ -65,7 +44,7 @@ begin
             IF x = '1' THEN next_state <= ST2;
             ELSE next_state <= ST1;  
             END IF;          
-        WHEN ST2 => --User input z variable 
+        WHEN ST2 => 
             y <= x"2";
             IF x = '1' THEN next_state <= ST3;
             ELSE next_state <= ST2;  
@@ -140,4 +119,4 @@ begin
         END CASE;
     END PROCESS ns;          
                                              
-end Behavioral;
+END Behavioral;

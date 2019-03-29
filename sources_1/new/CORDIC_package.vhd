@@ -13,4 +13,4 @@ constant x_address : STD_LOGIC_VECTOR(3 downto 0) := x"0";
 constant y_address : STD_LOGIC_VECTOR(3 downto 0) := x"1";  
 constant z_address : STD_LOGIC_VECTOR(3 downto 0) := x"2";  
 
-end package CORDIC_package;
+END package CORDIC_package;

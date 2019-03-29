@@ -1,57 +1,38 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 03/14/2019 04:07:48 PM
--- Design Name: 
--- Module Name: alu - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
+-- Engineer: Mark Bonwick
+-- Module Name: alu computation 
+-- Project Name: CORDIC
+-- Description: parallel ALU for CORDIC iterations
 ----------------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
---library xil_deafultlib;
---use xil_deafultlib.all;
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+
 ENTITY alu IS
   PORT (
-        x_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0); 
-        y_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
-        z_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
-        theta : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
-        i : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-        add_sub_x : IN STD_LOGIC;
-        add_sub_y : IN STD_LOGIC;
-        add_sub_z : IN STD_LOGIC;
-        x_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0); 
-        y_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
-        z_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
+        x_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0);    --X input
+        y_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0);    --Y input    
+        z_in : IN STD_LOGIC_VECTOR(15 DOWNTO 0);    --Z input
+        theta : IN STD_LOGIC_VECTOR(15 DOWNTO 0);   --Theta values from LUT
+        i : IN STD_LOGIC_VECTOR(3 DOWNTO 0);        --Iteration number
+        add_sub_x : IN STD_LOGIC;                   --Subtract x (0: Add, 1: Subtract)
+        add_sub_y : IN STD_LOGIC;                   --Subtract y (0: Add, 1: Subtract)
+        add_sub_z : IN STD_LOGIC;                   --Subtract z (0: Add, 1: Subtract)
+        x_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);  --X output 
+        y_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);  --Y output 
+        z_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)   --Z output
   );
   
 END alu;
 ARCHITECTURE computation OF alu IS
+    --16 bit adder
     COMPONENT cordicadder16 IS
     PORT (
-        a: IN std_logic_vector (15 DOWNTO 0);
-        b: IN std_logic_vector (15 DOWNTO 0);
-        sum: OUT std_logic_vector(15 DOWNTO 0);
-        cout: OUT std_logic
+        a: IN STD_LOGIC_VECTOR (15 DOWNTO 0);   --input varable A
+        b: IN STD_LOGIC_VECTOR (15 DOWNTO 0);   --input varable B
+        sum: OUT STD_LOGIC_VECTOR(15 DOWNTO 0); --Addition result
+        cout: OUT STD_LOGIC                     --Carry bit
     );
     END COMPONENT;
     
@@ -59,8 +40,9 @@ ARCHITECTURE computation OF alu IS
     SIGNAL y_signed : signed(15 DOWNTO 0)   := (OTHERS => '0');
     SIGNAL theta_signed : signed(15 DOWNTO 0)   := (OTHERS => '0');
     
-    BEGIN
+    BEGin
     
+    --Performs conversion of input x,y,z though bit shifting and inverting based on add_sub inputs
     conversion: PROCESS(x_in, y_in, z_in, add_sub_x, add_sub_y, add_sub_z, theta,i) IS BEGIN
                 
                 IF add_sub_x = '1' THEN
@@ -82,23 +64,24 @@ ARCHITECTURE computation OF alu IS
                 END IF;
                 
         END PROCESS conversion;
-        
+     
+    -------------16 bit adders--------------
     calcx: cordicadder16 PORT MAP (
         a => x_in,
-        b => std_logic_vector (x_signed),
-        sum => x_out
+        b => STD_LOGIC_VECTOR (x_signed),
+        sum => x_OUT
     );
     
     calcy: cordicadder16 PORT MAP (
         a => y_in,
-        b => std_logic_vector (y_signed),
-        sum => y_out
+        b => STD_LOGIC_VECTOR (y_signed),
+        sum => y_OUT
     );
     
     calcz: cordicadder16 PORT MAP (
         a => z_in,
-        b => std_logic_vector (theta_signed),
-        sum => z_out
+        b => STD_LOGIC_VECTOR (theta_signed),
+        sum => z_OUT
     );   
          
 END computation;

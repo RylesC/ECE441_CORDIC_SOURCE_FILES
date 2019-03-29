@@ -1,23 +1,9 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 03/06/2019 12:56:49 PM
--- Design Name: 
+-- Engineer: Riley Cambon
 -- Module Name: COUNTER_4BIT - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
+-- Project Name: CORDIC
+-- Description: Syncronous 4 Bit counter with inc enable and reset
 ----------------------------------------------------------------------------------
-
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -25,20 +11,21 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity COUNTER_4BIT is
 PORT(
-clk:        IN STD_LOGIC;
-reset:      IN STD_LOGIC;
-clear:      IN STD_LOGIC;
-inc:        IN STD_LOGIC;
-count_out:  OUT STD_LOGIC_VECTOR(3 downto 0)
+clk:        IN STD_LOGIC;                      --Clock 
+reset:      IN STD_LOGIC;                      --Reset to value "0000"
+clear:      IN STD_LOGIC;                      --Clears counter to value "0000"
+inc:        IN STD_LOGIC;                      --enables counting
+count_out:  OUT STD_LOGIC_VECTOR(3 downto 0)   --Count output
 );
-end COUNTER_4BIT;
+END COUNTER_4BIT;
 
-architecture Behavioral of COUNTER_4BIT is
+ARCHITECTURE Behavioral of COUNTER_4BIT is
 
-signal c: STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
+SIGNAL c: STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
 
-begin
+BEGIN
 
+--Syncronous counter with inc enable and reset
 PROCESS(clk, reset, clear)
     BEGIN
         IF ((reset = '1') or (clear = '1')) then 
@@ -50,4 +37,4 @@ PROCESS(clk, reset, clear)
         END IF;
     END PROCESS;
     count_out <= c;
-end Behavioral;
+END Behavioral;
