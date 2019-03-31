@@ -21,10 +21,8 @@ PORT (
 	--Button Inputs
 	btnC    	: IN STD_LOGIC; -- User Button
 	btnU    	: IN STD_LOGIC; -- Reset Button 
-	btnD    	: IN STD_LOGIC; -- NOT USED 
 	btnR    	: IN STD_LOGIC; -- Next state 
-	btnL    	: IN STD_LOGIC; -- NOT USED 
- 
+	 
     --User switches to enter x,y,z values
 	sw          : IN STD_LOGIC_VECTOR(15 downto 0); --Slide switch vector
 	
@@ -157,6 +155,10 @@ END COMPONENT;
 
 -------------------Signals-------------------------
 
+--Reset
+signal reset: STD_LOGIC;
+signal user_next_state: STD_LOGIC;
+
 --Data to be displayed on 7-segment display
 signal disp_data: STD_LOGIC_VECTOR (15 downto 0):= x"0000";
 
@@ -192,6 +194,7 @@ signal zdata: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 signal WE_x: STD_LOGIC;
 signal WE_y: STD_LOGIC;
 signal WE_z: STD_LOGIC;
+signal clear_ram: STD_LOGIC;
 
 --LUT address and data signals
 signal LUT_address: STD_LOGIC_VECTOR (3 downto 0);
@@ -263,7 +266,7 @@ BEGIN
   
   
   -- Finite state machine for USER data input and output STATES
-  USER_FSM:       FSM PORT map(clk => clk, x => btn_edge_r, reset => reset_btn_deb, y => fsm_state);
+  USER_FSM:       FSM PORT map(clk => clk, x => user_next_state, reset => reset_btn_deb, y => fsm_state);
   
    -- Finite state machine for CORDIC algorithm
   CORDIC_FSM:     FSM PORT map(clk => clk, x => cordic_iterate_en, reset => reset_btn_deb, y => iteration);
@@ -296,49 +299,56 @@ BEGIN
                         x_out=> x_out, y_out => y_out, z_out => z_out); 
     
     
-    ---------------------------------------CORDIC Process---------------------------------------------
+    ---------------------------------------CORDIC Process---------------------------------------------    
     
-    CORDIC: PROCESS (clk, btn_edge_r, btn_edge_c, clkdiv2, fsm_state, iteration) IS
+    CORDIC: PROCESS (reset_btn_deb, clk, btn_edge_r, sw, btn_edge_c, clkdiv2, fsm_state, iteration, latch_out_x, latch_out_y, latch_out_z, ram_out_x, ram_out_y, ram_out_z, cout) IS
     BEGIN
-    done <= '1';
     
     CASE fsm_state IS 
+    
     WHEN x"0" => --User input x variable
-        led <= x"1000";
+        done <= '1';
+        led <= x"0001";
         input_sel <= '0';
         disp_data <= sw;
+        user_next_state <= btn_edge_r;
         if btn_edge_c = '1' then
             x_init <= sw;
         END IF;
         
     WHEN x"1" => --User input y variable
-        led <= x"2000";
+        done <= '1';
+        led <= x"0002";
         input_sel <= '0';      
         disp_data <= sw;
+        user_next_state <= btn_edge_r;
         if btn_edge_c = '1' then
             y_init <= sw;
         END IF;        
         
     WHEN x"2" => --User input z variable 
-        led <= x"4000";
+        done <= '1';
+        led <= x"0004";
         input_sel <= '0';      
         disp_data <= sw;
-        if btn_edge_c = '1' then
+        user_next_state <= btn_edge_r;
+        IF btn_edge_c = '1' THEN
             z_init <= sw;
         END IF;        
         
     WHEN x"3" => --loop through input data (x,y,z) with btnC
-        INput_sel <= '0';
-        
+        Input_sel <= '0';
+        user_next_state <= btn_edge_r;
+        done <= '1';
         CASE cout IS
         WHEN  x"0" =>
-            led <= x"0001";
+            led <= x"0F01";
             disp_data <= latch_out_x;
         WHEN  x"1" =>
-            led <= x"0002";
+            led <= x"0F02";
             disp_data <= latch_out_y;
         WHEN  x"2" =>
-            led <= x"0004";
+            led <= x"0F04";
             disp_data <= latch_out_z; 
         WHEN OTHERS =>
             IF cout >= x"3" THEN
@@ -354,7 +364,8 @@ BEGIN
     WE_x <= clkdiv2;
     WE_y <= clkdiv2;
     WE_z <= clkdiv2;
-    
+    done <= '0';
+    user_next_state <= '0';
     cordic_iterate_en <= clkdiv2;
     
     --display Z value while itterating 
@@ -368,7 +379,9 @@ BEGIN
         WE_x <= '0';
         WE_y <= '0';
         WE_z <= '0';
-        cordic_iterate_en <= '0';         
+        cordic_iterate_en <= '0';
+        done <= '1'; 
+        user_next_state <= '1';     
     ELSIF iteration > x"0" THEN
         input_sel <= '1';
         led <= (15 downto iteration'length => '0') & iteration;         
@@ -387,16 +400,16 @@ BEGIN
     
     WHEN x"5" => --View CORDIC results 
     led <= x"0005"; 
-        
+        user_next_state <= btn_edge_r;
         CASE cout IS
         WHEN  x"0" =>
-            led <= x"0001";
+            led <= x"FF01";
             disp_data <= ram_out_x;
         WHEN  x"1" =>
-            led <= x"0002";
+            led <= x"FF02";
             disp_data <= ram_out_y;
         WHEN  x"2" =>
-            led <= x"0004";
+            led <= x"FF04";
             disp_data <= ram_out_z; 
         WHEN OTHERS =>
             IF cout >= x"3" THEN
@@ -407,6 +420,7 @@ BEGIN
         END CASE;
         
     WHEN OTHERS => --Display warning if invalid state
+        user_next_state <= '1';
         led <= x"ffff";
         disp_data <= sw;
     END CASE;

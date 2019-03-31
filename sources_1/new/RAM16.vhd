@@ -35,7 +35,10 @@ SIGNAL ram: memory;
 BEGIN
     RW: PROCESS(clk,clear, write_en_x, write_en_y, write_en_z)
     BEGIN  
-       IF (clear = '1') THEN ram <= (others => (others => '0'));
+       IF (clear = '1') THEN
+        ram(to_integer(UNSIGNED(x_address))) <= x"0000";
+        ram(to_integer(UNSIGNED(y_address))) <= x"0000";
+        ram(to_integer(UNSIGNED(z_address))) <= x"0000";
        ELSE          
             IF rising_edge(clk) THEN 
                 q_x <= ram(to_integer(UNSIGNED(x_address)));

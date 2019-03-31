@@ -21,21 +21,21 @@
 
 --Special angles for CORDIC
  constant romdata : romtable := (
-    x"6488", 
-    x"3B57",
-    x"1F5C",
-    x"0FEC",
-    x"07FD",
-    x"03FE",
-    x"01FF",
+    x"3244", 
+    x"1DAC", 
+    x"0FAE",
+    x"07F5",
+    x"03FF",
+    x"0200",
     x"0100",
     x"0080",
-    x"0042",
+    x"0040",
     x"0020",
     x"0010",
     x"0008",
     x"0004",
     x"0002",
+    x"0001",
     x"0001"
  );
  
