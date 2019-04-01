@@ -386,17 +386,28 @@ BEGIN
         input_sel <= '1';
         led <= (15 downto iteration'length => '0') & iteration;         
     END IF;        
-        
         --Set add/sub variable for CORDIC depending on sign of Z 
-        IF SIGNED(latch_out_z) >= 0 THEN 
-        add_sub_x <= '1';
-        add_sub_y <= '0'; 
-        add_sub_z <= '1';
+        IF sw(15) = '1' THEN 
+            IF SIGNED(latch_out_y) <= 0 THEN 
+            add_sub_x <= '1';
+            add_sub_y <= '0'; 
+            add_sub_z <= '1';
+            ELSE
+            add_sub_x <= '0';
+            add_sub_y <= '1'; 
+            add_sub_z <= '0';
+            END IF;
         ELSE
-        add_sub_x <= '0';
-        add_sub_y <= '1'; 
-        add_sub_z <= '0';
-        END IF;      
+            IF SIGNED(latch_out_z) >= 0 THEN 
+            add_sub_x <= '1';
+            add_sub_y <= '0'; 
+            add_sub_z <= '1';
+            ELSE
+            add_sub_x <= '0';
+            add_sub_y <= '1'; 
+            add_sub_z <= '0';
+            END IF;
+         END IF;
     
     WHEN x"5" => --View CORDIC results 
     led <= x"0005"; 
