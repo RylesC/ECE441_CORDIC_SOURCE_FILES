@@ -144,6 +144,8 @@ COMPONENT alu is
 -----------------------16 Bit latch-------------------------
 COMPONENT LATCH_16B is
     PORT (
+        clear       : IN STD_LOGIC;                         --clear latch
+        
         input_data0  : IN STD_LOGIC_VECTOR(15 downto 0);    --Input data 0
         input_data1  : IN STD_LOGIC_VECTOR(15 downto 0);    --Input data 1
         enable      : IN STD_LOGIC;                         --Enable
@@ -219,12 +221,10 @@ signal iteration    : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
  signal z_out :  STD_LOGIC_VECTOR(15 DOWNTO 0);
  signal alu_clk: STD_LOGIC; 
 
-
 --Initial values for x,y and z for latch
 signal x_init : STD_LOGIC_VECTOR(15 downto 0);
 signal y_init : STD_LOGIC_VECTOR(15 downto 0);
 signal z_init : STD_LOGIC_VECTOR(15 downto 0);
-
       
 --Input to latch from ram
 signal ram_out_x  : STD_LOGIC_VECTOR(15 downto 0);      
@@ -272,9 +272,9 @@ BEGIN
   CORDIC_FSM:     FSM PORT map(clk => clk, x => cordic_iterate_en, reset => reset_btn_deb, y => iteration);
 
   --Latches for taking initial data from user input 
-  X_LATCH:        LATCH_16B PORT map(input_data0 => x_init, input_data1 => ram_out_x, enable => '1', input_sel => input_sel, output_data => latch_out_x);
-  Y_LATCH:        LATCH_16B PORT map(input_data0 => y_init, input_data1 => ram_out_y, enable => '1', input_sel => input_sel, output_data => latch_out_y);
-  Z_LATCH:        LATCH_16B PORT map(input_data0 => z_init, input_data1 => ram_out_z, enable => '1', input_sel => input_sel, output_data => latch_out_z);   
+  X_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => x_init, input_data1 => ram_out_x, enable => '1', input_sel => input_sel, output_data => latch_out_x);
+  Y_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => y_init, input_data1 => ram_out_y, enable => '1', input_sel => input_sel, output_data => latch_out_y);
+  Z_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => z_init, input_data1 => ram_out_z, enable => '1', input_sel => input_sel, output_data => latch_out_z);   
   
   --RAM for holding x,y,z values
     RAM:          RAM16 PORT map(
