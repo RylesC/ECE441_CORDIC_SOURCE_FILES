@@ -145,7 +145,6 @@ COMPONENT alu is
 COMPONENT LATCH_16B is
     PORT (
         clear       : IN STD_LOGIC;                         --clear latch
-        
         input_data0  : IN STD_LOGIC_VECTOR(15 downto 0);    --Input data 0
         input_data1  : IN STD_LOGIC_VECTOR(15 downto 0);    --Input data 1
         enable      : IN STD_LOGIC;                         --Enable
@@ -196,7 +195,6 @@ signal zdata: STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 signal WE_x: STD_LOGIC;
 signal WE_y: STD_LOGIC;
 signal WE_z: STD_LOGIC;
-signal clear_ram: STD_LOGIC;
 
 --LUT address and data signals
 signal LUT_address: STD_LOGIC_VECTOR (3 downto 0);
@@ -221,10 +219,12 @@ signal iteration    : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
  signal z_out :  STD_LOGIC_VECTOR(15 DOWNTO 0);
  signal alu_clk: STD_LOGIC; 
 
+
 --Initial values for x,y and z for latch
 signal x_init : STD_LOGIC_VECTOR(15 downto 0);
 signal y_init : STD_LOGIC_VECTOR(15 downto 0);
 signal z_init : STD_LOGIC_VECTOR(15 downto 0);
+
       
 --Input to latch from ram
 signal ram_out_x  : STD_LOGIC_VECTOR(15 downto 0);      
@@ -233,9 +233,6 @@ signal ram_out_z  : STD_LOGIC_VECTOR(15 downto 0);
 
 --Theta value from LUT        
 signal theta      : STD_LOGIC_VECTOR(15 downto 0);
-      
---Latch enable
-signal latch_en : STD_LOGIC := '0';
 
 --Input select (0 for inital value, 1 for calculated value)      
 signal input_sel : STD_LOGIC;
@@ -247,6 +244,10 @@ signal latch_out_x  : STD_LOGIC_VECTOR(15 downto 0);
 signal latch_out_y  : STD_LOGIC_VECTOR(15 downto 0);   
 signal latch_out_z  : STD_LOGIC_VECTOR(15 downto 0);    
 
+signal en_x : STD_LOGIC := '0';
+signal en_y : STD_LOGIC := '0';
+signal en_z : STD_LOGIC := '0';
+
 BEGIN  
 
 --------------------------------Component Port Maps----------------------------------------
@@ -255,7 +256,7 @@ BEGIN
   User_DB_R:      debouncer PORT map (clk_100Mhz => clk, reset => reset_btn_deb, PB_IN => btnR, PB_OUT => user_btn_deb_r);
 
   --Debouncer for reset button
-  Reset_DB:     debouncer PORT map (clk_100Mhz => clk, reset => reset_btn_deb, PB_IN => btnU, PB_OUT => reset_btn_deb);
+  Reset_DB:     debouncer PORT map (clk_100Mhz => clk, reset => '0', PB_IN => btnU, PB_OUT => reset_btn_deb);
  
   -- Edge detechtor for user buttons
   ED_C:      EdgeDetector PORT map(clk => clk, d => user_btn_deb_c, edge => btn_edge_c);
@@ -272,9 +273,9 @@ BEGIN
   CORDIC_FSM:     FSM PORT map(clk => clk, x => cordic_iterate_en, reset => reset_btn_deb, y => iteration);
 
   --Latches for taking initial data from user input 
-  X_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => x_init, input_data1 => ram_out_x, enable => '1', input_sel => input_sel, output_data => latch_out_x);
-  Y_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => y_init, input_data1 => ram_out_y, enable => '1', input_sel => input_sel, output_data => latch_out_y);
-  Z_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => z_init, input_data1 => ram_out_z, enable => '1', input_sel => input_sel, output_data => latch_out_z);   
+  X_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => x_init, input_data1 => ram_out_x, enable => en_x, input_sel => input_sel, output_data => latch_out_x);
+  Y_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => y_init, input_data1 => ram_out_y, enable => en_y, input_sel => input_sel, output_data => latch_out_y);
+  Z_LATCH:        LATCH_16B PORT map(clear => reset_btn_deb, input_data0 => z_init, input_data1 => ram_out_z, enable => en_z, input_sel => input_sel, output_data => latch_out_z);   
   
   --RAM for holding x,y,z values
     RAM:          RAM16 PORT map(
@@ -304,16 +305,19 @@ BEGIN
     CORDIC: PROCESS (reset_btn_deb, clk, btn_edge_r, sw, btn_edge_c, clkdiv2, fsm_state, iteration, latch_out_x, latch_out_y, latch_out_z, ram_out_x, ram_out_y, ram_out_z, cout) IS
     BEGIN
     
+    --State machine for stepping through user states 
+    --(0: input x, 1: input y, 2: input z, 3: review input data, 4:Perform Cordic, 5: Review output data)
     CASE fsm_state IS 
-    
     WHEN x"0" => --User input x variable
         done <= '1';
         led <= x"0001";
         input_sel <= '0';
         disp_data <= sw;
         user_next_state <= btn_edge_r;
+        en_x <= '0';
         if btn_edge_c = '1' then
             x_init <= sw;
+            en_x <= '1';
         END IF;
         
     WHEN x"1" => --User input y variable
@@ -321,8 +325,10 @@ BEGIN
         led <= x"0002";
         input_sel <= '0';      
         disp_data <= sw;
+        en_y <= '0';
         user_next_state <= btn_edge_r;
         if btn_edge_c = '1' then
+            en_y <= '1';
             y_init <= sw;
         END IF;        
         
@@ -331,8 +337,10 @@ BEGIN
         led <= x"0004";
         input_sel <= '0';      
         disp_data <= sw;
+        en_z <= '0';
         user_next_state <= btn_edge_r;
         IF btn_edge_c = '1' THEN
+            en_z <= '1';
             z_init <= sw;
         END IF;        
         
@@ -374,17 +382,24 @@ BEGIN
     --Load inital values in first itteration
     IF iteration = x"0" THEN
         input_sel <= '0';
+        en_x <= '0';
+        en_y <= '0';
+        en_z <= '0';
+        
     ELSIF iteration = x"F" THEN
-        led <= x"5555";
+        --led <= x"5555";
         WE_x <= '0';
         WE_y <= '0';
         WE_z <= '0';
-        cordic_iterate_en <= '0';
+        cordic_iterate_en <= '1';
         done <= '1'; 
         user_next_state <= '1';     
     ELSIF iteration > x"0" THEN
         input_sel <= '1';
-        led <= (15 downto iteration'length => '0') & iteration;         
+        en_x <= '1';
+        en_y <= '1';
+        en_z <= '1';
+        --led <= (15 downto iteration'length => '0') & iteration;         
     END IF;        
         --Set add/sub variable for CORDIC depending on sign of Z 
         IF sw(15) = '1' THEN 
@@ -410,7 +425,7 @@ BEGIN
          END IF;
     
     WHEN x"5" => --View CORDIC results 
-    led <= x"0005"; 
+        cordic_iterate_en <= '0';
         user_next_state <= btn_edge_r;
         CASE cout IS
         WHEN  x"0" =>
@@ -430,10 +445,9 @@ BEGIN
             END IF;
         END CASE;
         
-    WHEN OTHERS => --Display warning if invalid state
+    WHEN OTHERS => --Displays warning if in invalid state otherwise goes to state 0
         user_next_state <= '1';
         led <= x"ffff";
-        disp_data <= sw;
     END CASE;
     
 END PROCESS CORDIC;          
